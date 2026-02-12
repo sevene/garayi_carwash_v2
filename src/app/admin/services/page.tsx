@@ -209,7 +209,7 @@ export default function AdminServicesPage() {
                     <td className="px-6 py-4 text-center">
                         <div className="flex justify-center gap-2" onClick={(e) => e.stopPropagation()}>
                             <Link
-                                href={`/admin/services/${service._id}`}
+                                href={`/admin/services/edit?id=${service._id}`}
                                 className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full transition"
                             >
                                 <PencilSquareIcon className="w-5 h-5" />

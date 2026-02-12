@@ -3,12 +3,12 @@
 import React, { useMemo } from 'react';
 import ServiceForm from '@/components/admin/ServiceForm';
 import { Service } from '@/lib/services';
-import { useParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@powersync/react';
 
 export default function EditServiceContent() {
-    const params = useParams();
-    const id = params?.id as string;
+    const searchParams = useSearchParams();
+    const id = searchParams.get('id');
 
     // 1. Fetch Service
     const { data: serviceData = [], isLoading: loadingService } = useQuery<any>(

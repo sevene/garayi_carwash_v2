@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { useParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import ProductForm from '@/components/admin/ProductForm';
 import { Product } from '@/lib/products';
 import { Category } from '@/lib/categories';
@@ -10,9 +10,9 @@ import { useScrollState } from '@/hooks/useScrollState';
 import { useQuery } from '@powersync/react';
 
 export default function EditProductContent() {
-    const params = useParams();
+    const searchParams = useSearchParams();
     const isScrolled = useScrollState();
-    const productId = params?.id as string;
+    const productId = searchParams.get('id');
 
     // Fetch product from PowerSync
     const { data: productData = [], isLoading: productLoading } = useQuery<any>(
