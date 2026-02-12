@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@supabase/supabase-js';
+
 import { cookies } from 'next/headers';
 import { createSession } from '@/lib/auth';
 
@@ -12,40 +12,62 @@ const getEnv = (key: string): string => {
     return '';
 };
 
-const supabaseUrl = getEnv('NEXT_PUBLIC_SUPABASE_URL');
-const supabaseAnonKey = getEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY');
-
 export async function createSessionAction(accessToken: string, refreshToken: string) {
     const supabaseUrl = getEnv('NEXT_PUBLIC_SUPABASE_URL');
     const supabaseAnonKey = getEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY');
 
     if (!supabaseUrl || !supabaseAnonKey) {
+        console.error('Supabase fetch failed: Missing env vars');
         return { success: false, error: 'Server configuration error' };
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-        auth: { persistSession: false }
-    });
-
     try {
-        // 1. Verify User with Token
-        const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+        // 1. Verify User with Token via REST API
+        // This avoids supabase-js library issues on Edge
+        const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
+            method: 'GET',
+            headers: {
+                'apikey': supabaseAnonKey,
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
 
-        if (authError || !user || !user.email) {
+        if (!userRes.ok) {
+            console.error('User verification failed:', await userRes.text());
             return { success: false, error: 'Invalid session token' };
         }
 
-        // 2. Fetch Employee Record
-        const { data: employee, error: dbError } = await supabase
-            .from('employees')
-            .select('*')
-            .eq('email', user.email)
-            .single();
+        const user = await userRes.json();
 
-        if (dbError || !employee) {
-            console.error('Database error or employee not found:', dbError);
+        if (!user || !user.email) {
+            return { success: false, error: 'User email not found' };
+        }
+
+        // 2. Fetch Employee Record via REST API
+        // Query: SELECT * FROM employees WHERE email = user.email LIMIT 1
+        const empUrl = `${supabaseUrl}/rest/v1/employees?email=eq.${encodeURIComponent(user.email)}&select=*&limit=1`;
+        const empRes = await fetch(empUrl, {
+            method: 'GET',
+            headers: {
+                'apikey': supabaseAnonKey,
+                'Authorization': `Bearer ${supabaseAnonKey}`, // Query as Anon (public read likely)
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!empRes.ok) {
+            console.error('Employee fetch failed:', await empRes.text());
+            return { success: false, error: 'Failed to access employee records' };
+        }
+
+        const empData = await empRes.json();
+
+        if (!empData || empData.length === 0) {
+            console.error('No employee found for email:', user.email);
             return { success: false, error: 'Employee record not found for this user.' };
         }
+
+        const employee = empData[0];
 
         // 3. Create Custom Session for Middleware
         const sessionToken = await createSession({
