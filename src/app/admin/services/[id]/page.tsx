@@ -1,5 +1,7 @@
 'use client';
 
+export const runtime = 'edge';
+
 import dynamic from 'next/dynamic';
 
 const EditServiceContent = dynamic(() => import('@/components/admin/EditServiceContent'), {
