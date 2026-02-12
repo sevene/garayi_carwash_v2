@@ -1,5 +1,7 @@
 'use client';
 
+export const runtime = 'edge';
+
 import React, { useMemo } from 'react';
 import ServiceForm from '@/components/admin/ServiceForm';
 import { Service } from '@/lib/services';
@@ -80,6 +82,7 @@ export default function EditServicePage() {
         return {
             _id: s.id,
             name: s.name,
+            sku: s.sku || '',
             description: s.description,
             category: s.category_id,
             products: products,

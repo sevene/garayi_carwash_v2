@@ -1,5 +1,7 @@
 'use client';
 
+export const runtime = 'edge';
+
 import React, { useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import ProductForm from '@/components/admin/ProductForm';
