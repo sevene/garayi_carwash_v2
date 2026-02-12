@@ -4,8 +4,16 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { createSession } from '@/lib/auth';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+// Safe process.env access for Edge Runtime
+const getEnv = (key: string): string => {
+    if (typeof process !== 'undefined' && process.env) {
+        return process.env[key] || '';
+    }
+    return '';
+};
+
+const supabaseUrl = getEnv('NEXT_PUBLIC_SUPABASE_URL');
+const supabaseAnonKey = getEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY');
 
 export async function loginAction(formData: FormData) {
     const email = formData.get('email') as string;
@@ -64,7 +72,7 @@ export async function loginAction(formData: FormData) {
         const cookieStore = await cookies();
         cookieStore.set('session', sessionToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: getEnv('NODE_ENV') === 'production',
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 // 1 day
         });
