@@ -11,7 +11,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { NetworkStatus } from './NetworkStatus';
 import { useCurrentUser } from '@/lib/hooks/useData';
 import { signOut } from '@/lib/supabase';
-import { logoutAction } from '@/app/login/actions';
+// import { logoutAction } from '@/app/login/actions';
 
 export function MainNav() {
     const pathname = usePathname();
@@ -25,7 +25,7 @@ export function MainNav() {
 
     const handleSignOut = async () => {
         try {
-            await logoutAction(); // Clear server cookie
+            await fetch('/api/auth/logout', { method: 'POST' }); // Clear server cookie
             await signOut();      // Clear client session
             toast.success('Logged out successfully');
             replace('/login');

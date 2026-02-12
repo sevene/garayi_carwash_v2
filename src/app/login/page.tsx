@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { createSessionAction } from './actions';
+
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -29,11 +29,18 @@ export default function LoginPage() {
             if (authError) throw authError;
             if (!data.session) throw new Error('No session returned');
 
-            // 2. Set Server Session Cookie (for Middleware)
-            const result = await createSessionAction(
-                data.session.access_token,
-                data.session.refresh_token
-            );
+            // 2. Set Server Session Cookie (for Middleware) via API Route
+            // This bypasses Server Action 405 issues on Cloudflare Pages
+            const response = await fetch('/api/auth/session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    accessToken: data.session.access_token,
+                    refreshToken: data.session.refresh_token
+                })
+            });
+
+            const result = await response.json();
 
             if (!result.success) {
                 // If server cookie fails, sign out client effectively
