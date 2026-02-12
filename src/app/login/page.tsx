@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { loginAction } from './actions';
+import { createSessionAction } from './actions';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -17,44 +17,40 @@ export default function LoginPage() {
         setLoading(true);
         setError('');
 
-        const formData = new FormData();
-        formData.append('email', email);
-        formData.append('password', password);
-
         try {
-            const result = await loginAction(formData);
+            // 1. Authenticate Client-Side (Always works)
+            const { data, error: authError } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
 
-            if (result.success) {
-                console.log('Login successful, setting session...');
-                // Set Supabase session on client (crucial for PowerSync!)
-                if (result.session) {
-                    const { error } = await supabase.auth.setSession({
-                        access_token: result.session.access_token,
-                        refresh_token: result.session.refresh_token,
-                    });
-                    if (error) console.error('Error setting session:', error);
-                }
+            if (authError) throw authError;
+            if (!data.session) throw new Error('No session returned');
 
-                console.log('Session set, redirecting...');
+            // 2. Set Server Session Cookie (for Middleware)
+            const result = await createSessionAction(
+                data.session.access_token,
+                data.session.refresh_token
+            );
 
-                // Redirect based on role
-                if (result.role === 'admin') {
-                    router.push('/admin/dashboard/overview');
-                } else {
-                    router.push('/pos');
-                }
-            } else {
-                setError(result.error || 'Login failed');
+            if (!result.success) {
+                // If server cookie fails, sign out client effectively
+                await supabase.auth.signOut();
+                throw new Error(result.error);
             }
+
+            console.log('Login successful, redirecting...');
+
+            // Redirect based on role
+            if (result.role === 'admin') {
+                router.push('/admin/dashboard/overview');
+            } else {
+                router.push('/pos');
+            }
+
         } catch (err: any) {
             console.error(err);
-            setError(err.message || 'An unknown error occurred');
-        } finally {
-            // Only stop loading if we are NOT redirecting (on error)
-            // If we are redirecting, we want to keep the loading state until the page changes
-            // However, since we can't easily know if push failed, we'll rely on the user seeing the navigation
-            // or we could leave it. If we don't set loading false, and push fails, it spins forever.
-            // Better to set it false. React will unmount components anyway.
+            setError(err.message || 'Login failed');
             setLoading(false);
         }
     };
