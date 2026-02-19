@@ -56,7 +56,7 @@ export const prepareTicketItemsForDb = (
     employees: any[],
     ticketId: string
 ) => {
-    return cartItems.map(item => {
+    return cartItems.map((item, index) => {
         const crewIds = itemCrew[item._id] || [];
         const crewSnapshot = crewIds.map(id => {
             const emp = employees.find((e: any) => e._id === id);
@@ -76,7 +76,8 @@ export const prepareTicketItemsForDb = (
             product_name: item.name,
             quantity: item.quantity,
             unit_price: item.price,
-            crew_snapshot: JSON.stringify(crewSnapshot)
+            crew_snapshot: JSON.stringify(crewSnapshot),
+            sort_order: index // 0-based index preserves order
         };
     });
 };

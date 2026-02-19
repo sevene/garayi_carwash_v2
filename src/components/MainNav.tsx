@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { BellIcon, UserCircleIcon, ChevronDownIcon, MagnifyingGlassIcon, UserIcon, Cog6ToothIcon, ArrowLeftOnRectangleIcon } from '@heroicons/react/24/outline';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
-import { toast } from 'sonner';
+import { showToast } from '@/components/ui/Toaster';
 import { useNotifications } from '@/hooks/useNotifications';
 import { NetworkStatus } from './NetworkStatus';
 import { useCurrentUser } from '@/lib/hooks/useData';
@@ -27,11 +27,11 @@ export function MainNav() {
         try {
             await fetch('/api/auth/logout', { method: 'POST' }); // Clear server cookie
             await signOut();      // Clear client session
-            toast.success('Logged out successfully');
+            showToast.success('Logged out successfully');
             replace('/login');
         } catch (error) {
             console.error('Logout error:', error);
-            toast.error('Failed to log out');
+            showToast.error('Failed to log out');
         }
     };
 
@@ -120,7 +120,7 @@ export function MainNav() {
                                 {isLoading ? 'Loading...' : user?.name || 'Unknown User'}
                             </p>
                             <p className="text-[10px] text-blue-600 uppercase tracking-widest mt-1 truncate">
-                                {isLoading ? '...' : user?.role || 'Staff'}
+                                {isLoading ? '...' : user?.roleName || 'Staff'}
                             </p>
                         </div>
 
@@ -145,11 +145,11 @@ export function MainNav() {
                     >
                         <div className="px-3 py-2 border-b border-gray-100 mb-1 sm:hidden">
                             <p className="text-sm font-bold text-gray-900">{user?.name}</p>
-                            <p className="text-[10px] font-bold text-blue-600 uppercase">{user?.role}</p>
+                            <p className="text-[10px] font-bold text-blue-600 uppercase">{user?.roleName}</p>
                         </div>
 
                         {/* Context-aware Navigation */}
-                        {isPOS && user?.role === 'admin' && (
+                        {isPOS && (user?.role === 'admin' || user?.role === 'Administrator' || (user?.role && user.role.toLowerCase().includes('admin'))) && (
                             <MenuItem>
                                 <Link
                                     href="/admin/dashboard/overview"

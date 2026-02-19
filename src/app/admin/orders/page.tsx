@@ -43,7 +43,7 @@ export default function AdminOrdersPage() {
 
     // Fetch tickets from PowerSync
     const { data: ticketsData = [], isLoading } = useQuery<any>(
-        `SELECT * FROM tickets WHERE status IN ('PAID', 'COMPLETED', 'CANCELLED') ORDER BY created_at DESC`
+        `SELECT * FROM tickets ORDER BY created_at DESC`
     );
 
     // Fetch ticket items

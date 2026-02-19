@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useContext, createContext, useEffect, useCallback } from 'react';
 import { Product } from '../lib/products';
-import { toast } from 'sonner';
+import { showToast } from '@/components/ui/Toaster';
 import { usePowerSync, useQuery } from '@powersync/react';
 import { v4 as uuidv4 } from 'uuid';
 import { generateTicketNumber, getCurrentMinutePrefix } from '@/lib/ticketNumber';
@@ -85,6 +85,7 @@ const useCartState = () => {
         return ticketsData.map((ticket: any) => {
             const items = allTicketItems
                 .filter((item: any) => item.ticket_id === ticket.id)
+                .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0)) // Preserve UI order
                 .map((item: any) => ({
                     productId: item.item_id || item.product_id,
                     productName: item.product_name || 'Unknown Item',
@@ -303,20 +304,23 @@ const useCartState = () => {
 
                 for (const item of items) {
                     await tx.execute(
-                        `INSERT INTO ticket_items (id, ticket_id, product_id, item_id, item_type, product_name, quantity, unit_price, crew_snapshot)
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                        [item.id, item.ticket_id, item.product_id, item.item_id, item.item_type, item.product_name, item.quantity, item.unit_price, item.crew_snapshot]
+                        `INSERT INTO ticket_items (id, ticket_id, product_id, item_id, item_type, product_name, quantity, unit_price, crew_snapshot, sort_order)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                        [item.id, item.ticket_id, item.product_id, item.item_id, item.item_type, item.product_name, item.quantity, item.unit_price, item.crew_snapshot, item.sort_order || 0]
                     );
                 }
             });
 
-            toast.success(`Ticket ${!currentTicketId ? 'Created' : 'Updated'}`);
+            showToast.success(!currentTicketId ? 'Ticket Created' : 'Ticket Updated', {
+                description: `Ticket "${nameToSave}" has been saved successfully.`,
+                duration: 5000,
+            });
             clearCart();
             switchToTicketsView();
         } catch (error: any) {
             console.error("Save error:", error);
             setCheckoutError(error.message || "Error saving ticket");
-            toast.error(error.message || "Error saving ticket");
+            showToast.error(error.message || "Error saving ticket");
         } finally {
             setIsProcessing(false);
         }
@@ -331,10 +335,10 @@ const useCartState = () => {
                 await tx.execute('DELETE FROM tickets WHERE id = ?', [ticketId]);
             });
             if (currentTicketId === ticketId) clearCart();
-            toast.success("Ticket deleted");
+            showToast.success("Ticket deleted");
         } catch (error) {
             console.error(error);
-            toast.error("Failed to delete ticket");
+            showToast.error("Failed to delete ticket");
         } finally {
             setIsProcessing(false);
         }
@@ -380,13 +384,13 @@ const useCartState = () => {
                 }
             });
 
-            toast.success(`Checkout Complete (${paymentMethod}): ${formatCurrency(total)}`);
+            showToast.success(`Checkout Complete (${paymentMethod}): ${formatCurrency(total)}`);
             clearCart();
             switchToTicketsView();
         } catch (error: any) {
             console.error("Checkout error:", error);
             setCheckoutError(error.message || "Checkout Error");
-            toast.error(error.message || "Checkout Error");
+            showToast.error(error.message || "Checkout Error");
         } finally {
             setIsProcessing(false);
         }

@@ -17,6 +17,19 @@ const settings = new Table({
 });
 
 // =============================================
+// ROLES TABLE
+// =============================================
+const roles = new Table({
+    name: column.text,
+    display_name: column.text,
+    permissions: column.text, // JSON string
+    description: column.text,
+    assignments: column.text, // JSON string
+    created_at: column.text,
+    updated_at: column.text
+});
+
+// =============================================
 // EMPLOYEES TABLE
 // =============================================
 const employees = new Table({
@@ -31,7 +44,8 @@ const employees = new Table({
     address: column.text,
     status: column.text,
     compensation: column.text, // JSON string
-    created_at: column.text
+    created_at: column.text,
+    updated_at: column.text
 }, { indexes: { username: ['username'] } });
 
 // =============================================
@@ -213,7 +227,8 @@ const ticket_items = new Table({
     product_name: column.text,
     quantity: column.integer,
     unit_price: column.real,
-    crew_snapshot: column.text // JSON string
+    crew_snapshot: column.text, // JSON string
+    sort_order: column.integer
 }, { indexes: { ticket: ['ticket_id'] } });
 
 // =============================================
@@ -232,6 +247,7 @@ const ticket_assignments = new Table({
 export const AppSchema = new Schema({
     settings,
     employees,
+    roles,
     categories,
     products,
     inventory,
@@ -250,6 +266,7 @@ export const AppSchema = new Schema({
 // Type exports for TypeScript
 export type Database = (typeof AppSchema)['types'];
 export type SettingsRecord = Database['settings'];
+export type RoleRecord = Database['roles'];
 export type EmployeeRecord = Database['employees'];
 export type CategoryRecord = Database['categories'];
 export type ProductRecord = Database['products'];

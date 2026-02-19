@@ -21,10 +21,9 @@ export default function SalesPage() {
         start: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
         end: format(endOfMonth(new Date()), 'yyyy-MM-dd')
     });
-    const [filterStatus, setFilterStatus] = useState('ALL');
 
     // Fetch tickets from PowerSync
-    const { data: ticketsData = [], isLoading } = useQuery<any>('SELECT * FROM tickets ORDER BY created_at DESC');
+    const { data: ticketsData = [], isLoading } = useQuery<any>("SELECT * FROM tickets WHERE status = 'PAID' ORDER BY created_at DESC");
     const { data: ticketItemsData = [] } = useQuery<any>('SELECT * FROM ticket_items');
     const { data: customersData = [] } = useQuery<any>('SELECT * FROM customers');
 
@@ -57,18 +56,17 @@ export default function SalesPage() {
                 if (!t.createdAt) return false;
                 const tDate = new Date(t.createdAt).getTime();
                 const dateMatch = tDate >= start && tDate <= end;
-                const statusMatch = filterStatus === 'ALL' ? true : t.status === filterStatus;
-                return dateMatch && statusMatch;
+                return dateMatch;
             });
 
-        // Calculate summary from completed tickets
-        const completedTickets = tickets.filter((t: any) => t.status === 'COMPLETED');
-        const totalRevenue = completedTickets.reduce((acc: number, t: any) => acc + t.total, 0);
-        const totalTickets = completedTickets.length;
+        // Calculate summary from visible (PAID) tickets
+        const paidTickets = tickets; // All tickets here are PAID due to SQL filter
+        const totalRevenue = paidTickets.reduce((acc: number, t: any) => acc + t.total, 0);
+        const totalTickets = paidTickets.length;
         const avgTicketValue = totalTickets > 0 ? totalRevenue / totalTickets : 0;
 
         const paymentMethods: Record<string, number> = {};
-        completedTickets.forEach((t: any) => {
+        paidTickets.forEach((t: any) => {
             const method = t.paymentMethod || 'Unspecified';
             paymentMethods[method] = (paymentMethods[method] || 0) + t.total;
         });
@@ -82,7 +80,7 @@ export default function SalesPage() {
                 paymentMethods
             }
         };
-    }, [ticketsData, ticketItemsData, customersData, dateRange, filterStatus]);
+    }, [ticketsData, ticketItemsData, customersData, dateRange]);
 
     const handleQuickRange = (range: 'TODAY' | 'THIS_MONTH' | 'LAST_MONTH') => {
         const today = new Date();
@@ -121,40 +119,25 @@ export default function SalesPage() {
             </div>
 
             {/* Filters */}
-            <div className="bg-gray-50 rounded-2xl p-4 shadow-md border border-white flex flex-col md:flex-row gap-4 items-end">
-                <div className="w-full md:w-auto">
-                    <CustomInput
-                        label="From"
+            <div className="flex flex-wrap gap-4 items-center">
+                <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl border border-gray-200">
+                    <span className="text-sm font-medium text-gray-500">Period:</span>
+                    <input
                         type="date"
                         value={dateRange.start}
                         onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                        name="startDate"
-                        className='bg-gray-50'
+                        className="text-sm border-none bg-transparent focus:ring-0 p-2 text-gray-700 font-medium"
                     />
-                </div>
-                <div className="w-full md:w-auto">
-                    <CustomInput
-                        label="To"
+                    <span className="text-gray-400 text-sm">to</span>
+                    <input
                         type="date"
                         value={dateRange.end}
                         onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                        name="endDate"
-                    />
-                </div>
-                <div className="w-full md:w-48">
-                    <CustomSelect
-                        label="Status"
-                        value={filterStatus}
-                        onChange={(val) => setFilterStatus(val as string)}
-                        options={[
-                            { label: 'All Statuses', value: 'ALL' },
-                            { label: 'Completed', value: 'COMPLETED' },
-                            { label: 'Open', value: 'OPEN' },
-                            { label: 'Cancelled', value: 'CANCELLED' }
-                        ]}
+                        className="text-sm border-none bg-transparent focus:ring-0 p-0 text-gray-700 font-medium"
                     />
                 </div>
             </div>
+
 
             {/* Metrics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -256,6 +239,6 @@ export default function SalesPage() {
                     </table>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

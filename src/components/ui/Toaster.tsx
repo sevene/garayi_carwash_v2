@@ -59,10 +59,10 @@ const ToastCard = ({ type, title, description, duration = 4000, onDismiss }: {
             {/* Bottom Colored Strip / Progress Bar */}
             <div className="h-1 w-full bg-gray-100">
                 <div
-                    className={`h-full ${border} ${description ? 'toast-progress' : ''}`}
+                    className={`h-full ${border} toast-progress`}
                     style={{
-                        width: description ? '0%' : '100%',
-                        animationDuration: description ? `${duration}ms` : '0ms'
+                        width: '0%',
+                        animationDuration: `${duration}ms`
                     }}
                 />
             </div>
@@ -73,16 +73,20 @@ const ToastCard = ({ type, title, description, duration = 4000, onDismiss }: {
 // Wrapper to simplify usage
 export const showToast = {
     success: (title: string, options?: { description?: string, duration?: number }) => {
-        toast.custom((id) => <ToastCard type="success" title={title} description={options?.description} duration={options?.duration} onDismiss={() => toast.dismiss(id)} />, { duration: options?.duration });
+        const duration = options?.duration || 4000;
+        toast.custom((id) => <ToastCard type="success" title={title} description={options?.description} duration={duration} onDismiss={() => toast.dismiss(id)} />, { duration });
     },
     error: (title: string, options?: { description?: string, duration?: number }) => {
-        toast.custom((id) => <ToastCard type="error" title={title} description={options?.description} duration={options?.duration} onDismiss={() => toast.dismiss(id)} />, { duration: options?.duration });
+        const duration = options?.duration || 4000;
+        toast.custom((id) => <ToastCard type="error" title={title} description={options?.description} duration={duration} onDismiss={() => toast.dismiss(id)} />, { duration });
     },
     warning: (title: string, options?: { description?: string, duration?: number }) => {
-        toast.custom((id) => <ToastCard type="warning" title={title} description={options?.description} duration={options?.duration} onDismiss={() => toast.dismiss(id)} />, { duration: options?.duration });
+        const duration = options?.duration || 4000;
+        toast.custom((id) => <ToastCard type="warning" title={title} description={options?.description} duration={duration} onDismiss={() => toast.dismiss(id)} />, { duration });
     },
     info: (title: string, options?: { description?: string, duration?: number }) => {
-        toast.custom((id) => <ToastCard type="info" title={title} description={options?.description} duration={options?.duration} onDismiss={() => toast.dismiss(id)} />, { duration: options?.duration });
+        const duration = options?.duration || 4000;
+        toast.custom((id) => <ToastCard type="info" title={title} description={options?.description} duration={duration} onDismiss={() => toast.dismiss(id)} />, { duration });
     },
 };
 

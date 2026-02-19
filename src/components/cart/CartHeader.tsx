@@ -59,7 +59,7 @@ export default function CartHeader({ ticketNameInput, setTicketNameInput }: Cart
                             setCurrentTicketName(e.target.value);
                             setTicketNameInput(e.target.value);
                         }}
-                        className="w-full bg-gray-50 border border-gray-100 text-gray-700 text-sm rounded-lg focus:ring-slate-400 focus:border-slate-800 block p-2.5 font-semibold transition-colors group-hover:bg-white group-hover:border-gray-200"
+                        className="w-full bg-gray-50 **border border-gray-100 text-gray-700 text-sm rounded-lg focus:ring-slate-400 focus:border-slate-800 block p-2.5 font-semibold transition-colors group-hover:bg-white group-hover:border-gray-200"
                         placeholder="Order Name / Number"
                     />
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
@@ -72,9 +72,9 @@ export default function CartHeader({ ticketNameInput, setTicketNameInput }: Cart
                 <div className="flex items-center justify-between px-1">
                     <button
                         onClick={openCustomerSidebar}
-                        className="text-[10px] font-bold text-gray-600 hover:text-gray-900 flex items-center gap-1.5 transition-colors group"
+                        className="text-[12px] font-normal text-lime-500 hover:text-lime-600 hover:underline hover:underline-offset-2 flex items-center gap-1.5 transition-colors group"
                     >
-                        <svg className="w-4 h-4 text-gray-400 group-hover:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-4 h-4 text-lime-500 group-hover:text-lime-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
                         {currentCustomer ? 'Edit Customer Info' : 'Add Customer Details'}

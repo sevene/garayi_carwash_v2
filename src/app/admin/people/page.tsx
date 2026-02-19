@@ -223,9 +223,16 @@ export default function AdminEmployeesPage() {
                         compensation = ?, updated_at = ?
                      WHERE id = ?`,
                     [
-                        employeeFormData.name, employeeFormData.username, employeeFormData.role, employeeFormData.pin,
-                        employeeFormData.contactInfo.phone, employeeFormData.contactInfo.email, employeeFormData.address, employeeFormData.status,
-                        JSON.stringify(employeeFormData.compensation), now,
+                        employeeFormData.name,
+                        employeeFormData.username,
+                        employeeFormData.role || null,
+                        employeeFormData.pin,
+                        employeeFormData.contactInfo.phone || null,
+                        employeeFormData.contactInfo.email || null,
+                        employeeFormData.address,
+                        employeeFormData.status,
+                        JSON.stringify(employeeFormData.compensation),
+                        now,
                         employeeId
                     ]
                 );
@@ -235,9 +242,18 @@ export default function AdminEmployeesPage() {
                     `INSERT INTO employees (id, name, username, role, pin, phone, email, address, status, compensation, created_at, updated_at)
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     [
-                        employeeId, employeeFormData.name, employeeFormData.username, employeeFormData.role, employeeFormData.pin,
-                        employeeFormData.contactInfo.phone, employeeFormData.contactInfo.email, employeeFormData.address, employeeFormData.status,
-                        JSON.stringify(employeeFormData.compensation), now, now
+                        employeeId,
+                        employeeFormData.name,
+                        employeeFormData.username,
+                        employeeFormData.role || null,
+                        employeeFormData.pin,
+                        employeeFormData.contactInfo.phone || null,
+                        employeeFormData.contactInfo.email || null,
+                        employeeFormData.address,
+                        employeeFormData.status,
+                        JSON.stringify(employeeFormData.compensation),
+                        now,
+                        now
                     ]
                 );
                 toast.success('Employee created');

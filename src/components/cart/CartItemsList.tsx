@@ -37,7 +37,7 @@ const CartItemsList = () => {
                             key={item._id}
                             onClick={() => openCrewSidebar(item._id)}
                             className={`flex justify-between items-center p-4 rounded-2xl bg-white border transition-all group mb-3 ${activeCrewItemId === item._id
-                                ? 'border-transparent z-10'
+                                ? 'border-gray-100 z-10'
                                 : 'border-gray-100 hover:border-gray-200'
                                 }`}
                         >
@@ -60,10 +60,10 @@ const CartItemsList = () => {
                                                 e.stopPropagation();
                                                 openCrewSidebar(item._id);
                                             }}
-                                            className="px-2 py-1 text-xs text-lime-600 rounded-full bg-lime-50 hover:bg-lime-600 hover:text-white transition-colors font-medium truncate max-w-[150px]"
+                                            className="px-2 py-1 text-[12px] text-lime-500 hover:text-lime-600 hover:underline hover:underline-offset-2 transition-colors font-normal truncate max-w-[150px]"
                                         >
                                             {assignedCrew.length > 0
-                                                ? assignedCrew.map(id => employees.find(e => e._id === id)?.name.split(' ')[0] || 'Unknown').join(', ')
+                                                ? assignedCrew.map(id => employees.find(e => e._id === id)?.name || 'Unknown').join(', ')
                                                 : 'Assign'}
                                         </button>
                                     </div>

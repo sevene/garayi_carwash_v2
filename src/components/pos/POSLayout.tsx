@@ -33,7 +33,7 @@ function POSLayoutInner({ initialServices, initialProducts, initialCategories, i
     initialInventory?: Record<string, number>;
 }) {
     const { sidebarView, closeSidebar, openTickets, currentTicketId, loadTicket } = useCart();
-    const isCrewSidebarOpen = sidebarView === 'CREW';
+    const isSidebarOpen = sidebarView === 'CREW' || sidebarView === 'CUSTOMER';
 
     return (
         <div className="flex flex-col flex-1 overflow-hidden shrink-0 relative h-full">
@@ -47,7 +47,7 @@ function POSLayoutInner({ initialServices, initialProducts, initialCategories, i
             {/* Main Workspace: Flex Row with Grid and Cart */}
             <div className="flex-1 overflow-hidden h-full bg-slate-50 flex flex-row relative">
                 {/* Product/Service Area - Takes remaining space */}
-                <div className={`flex-1 h-full relative transition-all duration-300 ${isCrewSidebarOpen ? 'opacity-50 pointer-events-none' : ''}`}>
+                <div className={`flex-1 h-full relative transition-all duration-300 ${isSidebarOpen ? '**opacity-100 pointer-events-none' : ''}`}>
                     <POSGrid
                         initialServices={initialServices}
                         initialProducts={initialProducts}
@@ -56,9 +56,9 @@ function POSLayoutInner({ initialServices, initialProducts, initialCategories, i
                     />
 
                     {/* Dimming Overlay for Sidebar - Covers only the grid */}
-                    {isCrewSidebarOpen && (
+                    {isSidebarOpen && (
                         <div
-                            className="absolute inset-0 bg-black/20 z-40 transition-opacity duration-300"
+                            className="absolute inset-0 bg-white/10 z-40 transition-opacity duration-300 backdrop-blur-[2px]"
                             onClick={closeSidebar}
                         />
                     )}

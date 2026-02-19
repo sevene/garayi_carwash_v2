@@ -71,7 +71,7 @@ const CustomerSelectionView: React.FC<CustomerSelectionViewProps> = ({ onBack })
 
             {/* Currently Assigned (if any) */}
             {currentCustomer && (
-                <div className="flex-none p-6 bg-gray-50 border-b border-slate-200 space-y-4">
+                <div className="flex-none p-6 bg-white border-b border-slate-200 space-y-4">
                     <div className="flex items-center justify-between px-1">
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Active Assignment</p>
                         <button
@@ -79,14 +79,14 @@ const CustomerSelectionView: React.FC<CustomerSelectionViewProps> = ({ onBack })
                                 setCustomer(null);
                                 setCurrentTicketName('New Order');
                             }}
-                            className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 transition-colors uppercase tracking-tight"
+                            className="flex items-center gap-1.5 font-semibold text-[10px] text-red-500 hover:text-red-700 transition-colors uppercase tracking-tight"
                         >
                             <TrashIcon className="w-3.5 h-3.5" />
                             Remove
                         </button>
                     </div>
 
-                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-2xl bg-slate-800 text-white flex items-center justify-center font-bold text-lg shadow-lg shadow-slate-200">
                                 {currentCustomer.name.charAt(0).toUpperCase()}
@@ -112,12 +112,12 @@ const CustomerSelectionView: React.FC<CustomerSelectionViewProps> = ({ onBack })
                                                 key={car.id}
                                                 onClick={() => handleCarToggle(car.plateNumber)}
                                                 className={`group w-full flex items-center justify-between p-3.5 rounded-xl border-2 transition-all relative overflow-hidden ${isSelected
-                                                    ? 'bg-slate-50 border-slate-800 text-slate-800'
-                                                    : 'bg-slate-50 border-slate-50 text-slate-600 hover:bg-white hover:border-slate-200'
+                                                    ? 'bg-white border-slate-800 text-slate-800'
+                                                    : 'bg-white border-slate-50 text-slate-600 hover:bg-white hover:border-slate-200'
                                                     }`}
                                             >
                                                 <div className="flex items-center gap-3 relative z-10">
-                                                    <div className={`px-2 py-1 rounded text-[10px] font-mono font-bold tracking-tighter ${isSelected ? 'bg-slate-800 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                                                    <div className={`px-2 py-1 rounded text-[12px] font-mono font-bold tracking-tighter ${isSelected ? 'bg-lime-500 text-white' : 'bg-slate-50 text-slate-600'}`}>
                                                         {car.plateNumber}
                                                     </div>
                                                     <span className="text-sm font-semibold truncate leading-none">{car.makeModel}</span>

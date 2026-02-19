@@ -59,7 +59,20 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
 
     // Upload a single CRUD operation to Supabase
     private async uploadOperation(operation: CrudEntry): Promise<void> {
-        const { op, table, id, opData } = operation;
+        const { op, table, id, opData: rawOpData } = operation;
+
+        // Clone and parse JSON fields to avoid double-serialization in Supabase JSONB columns
+        const opData = rawOpData ? { ...rawOpData } : undefined;
+        if (opData) {
+            const jsonFields = ['crew_snapshot', 'compensation', 'contact_info', 'permissions', 'assignments'];
+            for (const field of jsonFields) {
+                if (opData[field] && typeof opData[field] === 'string') {
+                    try {
+                        opData[field] = JSON.parse(opData[field]);
+                    } catch (e) { /* ignore */ }
+                }
+            }
+        }
 
         console.log(`[PowerSync] Uploading ${op} to ${table}:`, id);
 
@@ -127,7 +140,14 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
                         return;
                     }
 
-                    console.error(`[PowerSync] Upsert error for ${table}:`, upsertError);
+                    // Check for missing columns (common with schema changes)
+                    if (errCode === '42703') {
+                        console.error(`[PowerSync] Missing column in '${table}'. Please run migrations (e.g. updated_at).`);
+                    }
+
+                    console.error(`[PowerSync] Upsert error for ${table} RAW:`, upsertError);
+                    console.error(`[PowerSync] Upsert error for ${table} JSON:`, JSON.stringify(upsertError, Object.getOwnPropertyNames(upsertError), 2));
+                    console.error(`[PowerSync] Upsert failed data:`, JSON.stringify(opData));
                     throw upsertError;
                 }
                 break;

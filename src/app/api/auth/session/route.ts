@@ -46,12 +46,13 @@ export async function POST(req: NextRequest) {
         }
 
         // 2. Fetch Employee Record via REST API
-        const empUrl = `${supabaseUrl}/rest/v1/employees?email=eq.${encodeURIComponent(user.email)}&select=*&limit=1`;
+        // Join with roles table to get role name
+        const empUrl = `${supabaseUrl}/rest/v1/employees?email=eq.${encodeURIComponent(user.email)}&select=*,roles(name)&limit=1`;
         const empRes = await fetch(empUrl, {
             method: 'GET',
             headers: {
                 'apikey': supabaseAnonKey,
-                'Authorization': `Bearer ${supabaseAnonKey}`,
+                'Authorization': `Bearer ${accessToken}`, // Use User Token for RLS
                 'Content-Type': 'application/json'
             }
         });
@@ -70,11 +71,24 @@ export async function POST(req: NextRequest) {
 
         const employee = empData[0];
 
+        // Extract role name from joined data or fallback to role column
+        // The roles relation returns an object or array depending on relationship type (One-to-One/Many-to-One usually object or array)
+        // Since employee has one role, it should be an object or single item array
+        let roleName = employee.role;
+
+        if (employee.roles) {
+            if (Array.isArray(employee.roles) && employee.roles.length > 0) {
+                roleName = employee.roles[0].name;
+            } else if (typeof employee.roles === 'object' && employee.roles.name) {
+                roleName = employee.roles.name;
+            }
+        }
+
         // 3. Create Custom Session for Middleware
         const sessionToken = await createSession({
             userId: employee.id,
             username: employee.username,
-            role: employee.role
+            role: roleName // Use the human-readable role name (e.g. 'admin')
         });
 
         // 4. Set Cookie
@@ -86,7 +100,7 @@ export async function POST(req: NextRequest) {
             maxAge: 60 * 60 * 24 // 1 day
         });
 
-        return NextResponse.json({ success: true, role: employee.role });
+        return NextResponse.json({ success: true, role: roleName });
 
     } catch (error: any) {
         console.error('Session creation error:', error);

@@ -292,12 +292,22 @@ export function useCurrentUser() {
         return () => subscription.unsubscribe();
     }, []);
 
-    const { data: employeeData, isLoading: isLoadingEmployee } = useQuery<EmployeeRecord>(
-        userEmail ? 'SELECT * FROM employees WHERE email = ?' : 'SELECT * FROM employees WHERE 1=0',
+    // Also fetch role display name
+    const { data: employeeData, isLoading: isLoadingEmployee } = useQuery<any>(
+        userEmail
+            ? `SELECT e.*, r.display_name as role_name, r.name as internal_role_name
+               FROM employees e
+               LEFT JOIN roles r ON e.role = r.id
+               WHERE e.email = ?`
+            : 'SELECT * FROM employees WHERE 1=0',
         userEmail ? [userEmail] : []
     );
 
-    const user = employeeData?.[0] ?? null;
+    const user = employeeData?.[0] ? {
+        ...employeeData[0],
+        role: employeeData[0].internal_role_name || employeeData[0].role, // Prefer role name from roles table if joined clearly, else whatever is in employee.role (which is UUID now)
+        roleName: employeeData[0].role_name || 'Staff' // Display name
+    } : null;
 
     return {
         user,

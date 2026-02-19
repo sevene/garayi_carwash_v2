@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useCart } from '@/hooks/useCart';
-import CustomerSelectionView from './CustomerSelectionView';
-import CrewSidebar from './CrewSidebar';
+import CartSidebar from './CartSidebar';
 import PaymentModal from './PaymentModal';
 import CartHeader from './CartHeader';
 import CartItemsList from './CartItemsList';
@@ -16,7 +15,6 @@ export function CartPanel() {
         saveTicket,
         currentTicketName,
         sidebarView,
-        closeSidebar,
         isCartOpen,
     } = useCart();
 
@@ -77,8 +75,7 @@ export function CartPanel() {
                 {/* Right Sidebar - slides in from right */}
                 <div className={`bg-white border-l border-gray-200 h-full overflow-hidden transition-all duration-300 ${sidebarView !== 'NONE' ? 'w-[500px]' : 'w-0'
                     }`}>
-                    {sidebarView === 'CREW' && <CrewSidebar />}
-                    {sidebarView === 'CUSTOMER' && <CustomerSelectionView onBack={closeSidebar} />}
+                    <CartSidebar />
                 </div>
             </div>
         </div>
