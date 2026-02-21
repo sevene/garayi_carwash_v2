@@ -160,13 +160,13 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
             .map(page => {
                 const titleMatch = page.title.toLowerCase().includes(q);
                 const pathMatch = page.path.toLowerCase().includes(q);
-                const matchedKeyword = page.keywords.find(kw => kw.label.toLowerCase().includes(q));
-                if (titleMatch || pathMatch || matchedKeyword) {
-                    return { ...page, matchedKeyword: matchedKeyword || null };
+                const matchedKeywords = page.keywords.filter(kw => kw.label.toLowerCase().includes(q));
+                if (titleMatch || pathMatch || matchedKeywords.length > 0) {
+                    return { ...page, matchedKeywords };
                 }
                 return null;
             })
-            .filter(Boolean) as (typeof ADMIN_PAGES[number] & { matchedKeyword: PageKeyword | null })[];
+            .filter(Boolean) as (typeof ADMIN_PAGES[number] & { matchedKeywords: PageKeyword[] })[];
     }, [q]);
 
     const totalResults = matchedProducts.length + matchedServices.length + matchedCustomers.length + matchedEmployees.length + matchedTickets.length + matchedPages.length;
@@ -203,16 +203,23 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
                             <div className="space-y-1">
                                 {matchedPages.map((page, idx) => (
                                     <Link onClick={onClose} href={page.path} key={`page-${idx}`} className="flex items-center justify-between px-4 py-3 bg-white/30 hover:bg-gray-900 rounded-xl transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] group/item">
-                                        <div>
+                                        <div className="min-w-0 flex-1">
                                             <p className="font-bold text-gray-900 group-hover/item:text-white text-sm transition">{page.title}</p>
-                                            <p className="text-[10px] text-gray-500 group-hover/item:text-gray-300 mt-0.5 transition">
-                                                {page.matchedKeyword
-                                                    ? <><span className="font-semibold">{page.matchedKeyword.section}</span>: {page.matchedKeyword.label}</>
-                                                    : page.path
-                                                }
-                                            </p>
+                                            {page.matchedKeywords.length > 0 ? (
+                                                <p className="text-[10px] text-gray-500 group-hover/item:text-gray-300 mt-0.5 transition truncate">
+                                                    {Object.entries(
+                                                        page.matchedKeywords.reduce((acc, kw) => {
+                                                            acc[kw.section] = acc[kw.section] || [];
+                                                            acc[kw.section].push(kw.label);
+                                                            return acc;
+                                                        }, {} as Record<string, string[]>)
+                                                    ).map(([section, labels]) => `${section}: ${labels.join(', ')}`).join(' · ')}
+                                                </p>
+                                            ) : (
+                                                <p className="text-[10px] text-gray-500 group-hover/item:text-gray-300 font-mono mt-0.5 transition">{page.path}</p>
+                                            )}
                                         </div>
-                                        <div className="text-right">
+                                        <div className="text-right shrink-0 ml-3">
                                             <ArrowTopRightOnSquareIcon className="w-4 h-4 text-gray-400 group-hover/item:text-white transition" />
                                         </div>
                                     </Link>
