@@ -3,8 +3,18 @@
 import React, { useMemo } from 'react';
 import { useQuery } from '@powersync/react';
 import Link from 'next/link';
-import { CubeIcon, SparklesIcon, UserGroupIcon, UsersIcon, TicketIcon } from '@heroicons/react/24/outline';
+import { CubeIcon, SparklesIcon, UserGroupIcon, UsersIcon, TicketIcon, ArrowTopRightOnSquareIcon, WindowIcon } from '@heroicons/react/24/outline';
 import { useSettings } from '@/hooks/useSettings';
+
+const ADMIN_PAGES = [
+    { title: 'Dashboard Overview', desc: 'Main sales and tickets dashboard', path: '/admin/dashboard/overview' },
+    { title: 'Products Dashboard', desc: 'Manage carwash products & inventory', path: '/admin/products' },
+    { title: 'Services Area', desc: 'Manage base services & variants', path: '/admin/services' },
+    { title: 'Customers Page', desc: 'CRM, loyalty points, & history', path: '/admin/customers' },
+    { title: 'People & Staff', desc: 'Manage employee shifts & roles', path: '/admin/people' },
+    { title: 'All Orders', desc: 'View current and past ticket histories', path: '/admin/orders' },
+    { title: 'Business Settings', desc: 'Configure company receipts & taxes', path: '/admin/settings' },
+];
 
 export default function GlobalSearchDropdown({ query, onClose }: { query: string, onClose: () => void }) {
     const { formatCurrency } = useSettings();
@@ -43,13 +53,18 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
         return tickets.filter((t: any) => t.customer_name?.toLowerCase().includes(q) || t.status?.toLowerCase().includes(q) || t.id?.toLowerCase().includes(q));
     }, [q, tickets]);
 
-    const totalResults = matchedProducts.length + matchedServices.length + matchedCustomers.length + matchedEmployees.length + matchedTickets.length;
+    const matchedPages = useMemo(() => {
+        if (!q) return [];
+        return ADMIN_PAGES.filter(page => page.title.toLowerCase().includes(q) || page.desc.toLowerCase().includes(q));
+    }, [q]);
+
+    const totalResults = matchedProducts.length + matchedServices.length + matchedCustomers.length + matchedEmployees.length + matchedTickets.length + matchedPages.length;
     const isLoading = loadingProducts || loadingServices || loadingCustomers || loadingEmployees || loadingTickets;
 
     if (!q) return null;
 
     return (
-        <div className="absolute top-full left-0 right-0 mt-3 max-h-[70vh] overflow-y-auto hover-scrollbar rounded-2xl border border-white/60 shadow-2xl bg-white/10 backdrop-blur-xl backdrop-saturate-200 z-100 p-3 flex flex-col gap-3">
+        <div className="absolute top-full left-0 right-0 mt-3 max-h-[70vh] overflow-y-auto hover-scrollbar rounded-2xl border border-white/60 shadow-2xl bg-white/10 backdrop-blur-lg backdrop-saturate-50 z-100 p-3 flex flex-col gap-3">
             {isLoading && (
                 <div className="p-6 flex flex-col items-center justify-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mb-3"></div>
@@ -65,6 +80,28 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
 
             {!isLoading && totalResults > 0 && (
                 <div className="space-y-4">
+                    {/* Navigation Pages Block */}
+                    {matchedPages.length > 0 && (
+                        <div>
+                            <div className="px-3 py-1.5 text-xs font-extrabold text-gray-500 uppercase tracking-widest flex items-center gap-2 mb-1">
+                                <WindowIcon className="w-4 h-4 text-gray-400" /> Pages & Navigation
+                            </div>
+                            <div className="space-y-1">
+                                {matchedPages.map((page, idx) => (
+                                    <Link onClick={onClose} href={page.path} key={`page-${idx}`} className="flex items-center justify-between px-4 py-3 bg-white/30 hover:bg-gray-900 rounded-xl transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] group/item">
+                                        <div>
+                                            <p className="font-bold text-gray-900 group-hover/item:text-white text-sm transition">{page.title}</p>
+                                            <p className="text-[10px] text-gray-500 group-hover/item:text-gray-300 font-mono mt-0.5 transition">{page.desc}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <ArrowTopRightOnSquareIcon className="w-4 h-4 text-gray-400 group-hover/item:text-white transition" />
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Products Block */}
                     {matchedProducts.length > 0 && (
                         <div>
