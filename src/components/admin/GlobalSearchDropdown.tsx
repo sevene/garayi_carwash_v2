@@ -7,16 +7,33 @@ import { CubeIcon, SparklesIcon, UserGroupIcon, UsersIcon, TicketIcon, ArrowTopR
 import { useSettings } from '@/hooks/useSettings';
 import { NAV_ITEMS } from './AdminSideBar';
 
+// Keywords map: searchable terms for each page's fields & elements
+const PAGE_KEYWORDS: Record<string, string[]> = {
+    '/admin/dashboard/overview': ['total sales', 'tickets today', 'revenue', 'commissions', 'crew performance', 'recent transactions'],
+    '/admin/dashboard/sales': ['sales breakdown', 'daily sales', 'monthly sales', 'revenue chart'],
+    '/admin/dashboard/expenses': ['expenses', 'costs', 'spending', 'expense tracking'],
+    '/admin/dashboard/reports': ['reports', 'analytics', 'export', 'summary'],
+    '/admin/categories': ['category', 'subcategory', 'product categories', 'group'],
+    '/admin/products': ['product name', 'sku', 'price', 'cost', 'barcode', 'stock', 'pos visibility', 'add product'],
+    '/admin/inventory': ['inventory', 'stock level', 'quantity', 'restock', 'stock count', 'low stock'],
+    '/admin/services': ['service name', 'base price', 'service variant', 'variant', 'recipe', 'description'],
+    '/admin/orders': ['order', 'ticket', 'status', 'paid', 'pending', 'walk-in', 'checkout', 'order history'],
+    '/admin/customers': ['customer name', 'email', 'phone', 'loyalty', 'customer history', 'crm'],
+    '/admin/people': ['employee', 'staff', 'role', 'shift', 'commission rate', 'hire date', 'position'],
+    '/admin/settings': ['store name', 'store address', 'currency', 'tax rate', 'receipt header', 'receipt footer', 'printer', 'theme', 'notifications', 'system alerts'],
+};
+
 // Flatten nav items (including children like Dashboard > Overview) into a searchable list
 const ADMIN_PAGES = NAV_ITEMS.flatMap(item => {
     if (item.children && item.children.length > 0) {
         return item.children.map(child => ({
             title: `${item.name} › ${child.name}`,
             path: child.href,
+            keywords: PAGE_KEYWORDS[child.href] || [],
         }));
     }
     if (item.href === '#') return [];
-    return [{ title: item.name, path: item.href }];
+    return [{ title: item.name, path: item.href, keywords: PAGE_KEYWORDS[item.href] || [] }];
 });
 
 export default function GlobalSearchDropdown({ query, onClose }: { query: string, onClose: () => void }) {
@@ -58,7 +75,17 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
 
     const matchedPages = useMemo(() => {
         if (!q) return [];
-        return ADMIN_PAGES.filter(page => page.title.toLowerCase().includes(q) || page.path.toLowerCase().includes(q));
+        return ADMIN_PAGES
+            .map(page => {
+                const titleMatch = page.title.toLowerCase().includes(q);
+                const pathMatch = page.path.toLowerCase().includes(q);
+                const matchedKeyword = page.keywords.find(kw => kw.toLowerCase().includes(q));
+                if (titleMatch || pathMatch || matchedKeyword) {
+                    return { ...page, matchedKeyword: matchedKeyword || null };
+                }
+                return null;
+            })
+            .filter(Boolean) as (typeof ADMIN_PAGES[number] & { matchedKeyword: string | null })[];
     }, [q]);
 
     const totalResults = matchedProducts.length + matchedServices.length + matchedCustomers.length + matchedEmployees.length + matchedTickets.length + matchedPages.length;
@@ -97,7 +124,12 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
                                     <Link onClick={onClose} href={page.path} key={`page-${idx}`} className="flex items-center justify-between px-4 py-3 bg-white/30 hover:bg-gray-900 rounded-xl transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] group/item">
                                         <div>
                                             <p className="font-bold text-gray-900 group-hover/item:text-white text-sm transition">{page.title}</p>
-                                            <p className="text-[10px] text-gray-500 group-hover/item:text-gray-300 font-mono mt-0.5 transition">{page.path}</p>
+                                            <p className="text-[10px] text-gray-500 group-hover/item:text-gray-300 font-mono mt-0.5 transition">
+                                                {page.matchedKeyword
+                                                    ? `Contains: ${page.matchedKeyword}`
+                                                    : page.path
+                                                }
+                                            </p>
                                         </div>
                                         <div className="text-right">
                                             <ArrowTopRightOnSquareIcon className="w-4 h-4 text-gray-400 group-hover/item:text-white transition" />
