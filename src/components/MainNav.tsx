@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -12,6 +12,7 @@ import { NetworkStatus } from './NetworkStatus';
 import { useCurrentUser } from '@/lib/hooks/useData';
 import { signOut } from '@/lib/supabase';
 // import { logoutAction } from '@/app/login/actions';
+import GlobalSearchDropdown from './admin/GlobalSearchDropdown';
 
 export function MainNav() {
     const pathname = usePathname();
@@ -19,6 +20,9 @@ export function MainNav() {
     const { replace } = useRouter();
     const { notificationCount } = useNotifications();
     const { user, isLoading } = useCurrentUser();
+
+    const [adminSearchQuery, setAdminSearchQuery] = useState('');
+    const [showAdminSearch, setShowAdminSearch] = useState(false);
 
     // Debounce search
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -35,7 +39,7 @@ export function MainNav() {
         }
     };
 
-    const handleSearch = (term: string) => {
+    const handlePOSSearch = (term: string) => {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
         timeoutRef.current = setTimeout(() => {
@@ -45,18 +49,7 @@ export function MainNav() {
             } else {
                 params.delete('q');
             }
-
-            if (isAdmin) {
-                if (term) {
-                    replace(`/admin/search?${params.toString()}`);
-                } else if (pathname === '/admin/search') {
-                    // If they clear the search bar while ON the search page, just update the URL
-                    replace(`/admin/search?${params.toString()}`);
-                }
-                // If they clear the search bar while on another page, do nothing vs clearing local state
-            } else {
-                replace(`${pathname}?${params.toString()}`);
-            }
+            replace(`${pathname}?${params.toString()}`);
         }, 300);
     };
 
@@ -101,14 +94,33 @@ export function MainNav() {
                         <input
                             type="text"
                             name={isPOS ? "posSearch" : "adminSearch"}
-                            defaultValue={searchParams.get('q')?.toString()}
-                            onChange={(e) => handleSearch(e.target.value)}
+                            value={isAdmin ? adminSearchQuery : searchParams.get('q')?.toString() || ''}
+                            onChange={(e) => {
+                                if (isAdmin) {
+                                    setAdminSearchQuery(e.target.value);
+                                    setShowAdminSearch(true);
+                                } else {
+                                    handlePOSSearch(e.target.value);
+                                }
+                            }}
+                            onFocus={() => { if (isAdmin && adminSearchQuery) setShowAdminSearch(true); }}
+                            onBlur={() => { if (isAdmin) setTimeout(() => setShowAdminSearch(false), 200); }}
                             className={`block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl leading-5 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:border-2 transition-all sm:text-sm ${isAdmin
                                 ? 'focus:border-lime-600 focus:ring-2 focus:ring-lime-600/20'
                                 : 'focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20'
                                 }`}
                             placeholder={isPOS ? "Search products, services, or SKU..." : "Search dashboard, records, or settings..."}
+                            autoComplete="off"
                         />
+                        {isAdmin && showAdminSearch && adminSearchQuery && (
+                            <GlobalSearchDropdown
+                                query={adminSearchQuery}
+                                onClose={() => {
+                                    setShowAdminSearch(false);
+                                    setAdminSearchQuery('');
+                                }}
+                            />
+                        )}
                     </div>
                 </div>
             )}
