@@ -19,11 +19,40 @@ body {
 
 /* Custom Hover Scrollbar */
 .hover-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
   transition: scrollbar-color 0.3s ease;
 }
 
 .hover-scrollbar:hover {
+  /* Firefox standard hover (works without standard scrollbar-width) */
   scrollbar-color: #d1d5db transparent;
+}
+
+/* Hide scrollbar by default in WebKit */
+.hover-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  background-color: transparent;
+}
+
+.hover-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Hide complete scrollbar thumb in WebKit until hovered */
+.hover-scrollbar::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 9999px;
+}
+
+/* Display thumb on hover in WebKit */
+.hover-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: #d1d5db;
+  /* gray-300 */
+}
+
+/* Explicitly destroy scrollbar arrows in WebKit */
+.hover-scrollbar::-webkit-scrollbar-button,
+.hover-scrollbar::-webkit-scrollbar-corner {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
