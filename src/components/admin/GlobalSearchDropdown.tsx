@@ -49,7 +49,7 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
     if (!q) return null;
 
     return (
-        <div className="absolute top-full left-0 right-0 mt-3 max-h-[70vh] overflow-y-auto hover-scrollbar rounded-2xl border border-white/60 shadow-2xl bg-white/60 backdrop-blur-2xl backdrop-saturate-200 z-100 p-3 flex flex-col gap-3">
+        <div className="absolute top-full left-0 right-0 mt-3 max-h-[70vh] overflow-y-auto hover-scrollbar rounded-2xl border border-white/60 shadow-2xl bg-white/10 backdrop-blur-xl backdrop-saturate-200 z-100 p-3 flex flex-col gap-3">
             {isLoading && (
                 <div className="p-6 flex flex-col items-center justify-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mb-3"></div>
@@ -73,13 +73,13 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
                             </div>
                             <div className="space-y-1">
                                 {matchedProducts.map((p: any) => (
-                                    <Link onClick={onClose} href={`/admin/products/edit?id=${p.id}`} key={p.id} className="flex items-center justify-between px-4 py-3 bg-white/30 hover:bg-gray-900 rounded-xl transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] group">
+                                    <Link onClick={onClose} href={`/admin/products/edit?id=${p.id}`} key={p.id} className="flex items-center justify-between px-4 py-3 bg-white/30 hover:bg-white/50 rounded-xl transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] group">
                                         <div>
-                                            <p className="font-bold text-gray-900 group-hover:text-white text-sm transition">{p.name}</p>
-                                            <p className="text-[10px] text-gray-500 group-hover:text-gray-400 font-mono mt-0.5">SKU: {p.sku || 'N/A'}</p>
+                                            <p className="font-bold text-gray-900 text-sm transition">{p.name}</p>
+                                            <p className="text-[10px] text-gray-500 font-mono mt-0.5">SKU: {p.sku || 'N/A'}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="font-bold text-gray-900 group-hover:text-white text-sm transition">{formatCurrency(p.price)}</p>
+                                            <p className="font-bold text-gray-900 text-sm transition">{formatCurrency(p.price)}</p>
                                         </div>
                                     </Link>
                                 ))}
@@ -95,13 +95,13 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
                             </div>
                             <div className="space-y-1">
                                 {matchedServices.map((s: any) => (
-                                    <Link onClick={onClose} href={`/admin/services/${s.id}`} key={s.id} className="flex items-center justify-between px-4 py-3 bg-white/30 hover:bg-gray-900 rounded-xl transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] group">
+                                    <Link onClick={onClose} href={`/admin/services/${s.id}`} key={s.id} className="flex items-center justify-between px-4 py-3 bg-white/30 hover:bg-white/50 rounded-xl transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] group">
                                         <div>
-                                            <p className="font-bold text-gray-900 group-hover:text-white text-sm transition">{s.name}</p>
-                                            <p className="text-[10px] text-gray-500 group-hover:text-gray-400 truncate max-w-[150px] transition">{s.description || 'No description'}</p>
+                                            <p className="font-bold text-gray-900 text-sm transition">{s.name}</p>
+                                            <p className="text-[10px] text-gray-500 truncate max-w-[150px] transition">{s.description || 'No description'}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="font-bold text-gray-900 group-hover:text-white text-sm transition">{formatCurrency(s.base_price || 0)}</p>
+                                            <p className="font-bold text-gray-900 text-sm transition">{formatCurrency(s.base_price || 0)}</p>
                                         </div>
                                     </Link>
                                 ))}
@@ -117,12 +117,12 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
                             </div>
                             <div className="space-y-1">
                                 {matchedCustomers.map((c: any) => (
-                                    <Link onClick={onClose} href={`/admin/customers`} key={c.id} className="flex items-center justify-between px-4 py-3 bg-white/30 hover:bg-gray-900 rounded-xl transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] group">
+                                    <Link onClick={onClose} href={`/admin/customers`} key={c.id} className="flex items-center justify-between px-4 py-3 bg-white/30 hover:bg-white/50 rounded-xl transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] group">
                                         <div>
-                                            <p className="font-bold text-gray-900 group-hover:text-white text-sm transition">{c.name}</p>
+                                            <p className="font-bold text-gray-900 text-sm transition">{c.name}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-[10px] text-gray-500 group-hover:text-gray-400 transition">{c.phone || c.email || 'No info'}</p>
+                                            <p className="text-[10px] text-gray-500 transition">{c.phone || c.email || 'No info'}</p>
                                         </div>
                                     </Link>
                                 ))}
@@ -138,12 +138,12 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
                             </div>
                             <div className="space-y-1">
                                 {matchedEmployees.map((e: any) => (
-                                    <Link onClick={onClose} href={`/admin/people`} key={e.id} className="flex items-center justify-between px-4 py-3 bg-white/30 hover:bg-gray-900 rounded-xl transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] group">
+                                    <Link onClick={onClose} href={`/admin/people`} key={e.id} className="flex items-center justify-between px-4 py-3 bg-white/30 hover:bg-white/50 rounded-xl transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] group">
                                         <div>
-                                            <p className="font-bold text-gray-900 group-hover:text-white text-sm transition">{e.name}</p>
+                                            <p className="font-bold text-gray-900 text-sm transition">{e.name}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-[10px] text-gray-900 group-hover:text-white uppercase font-bold transition">{e.role}</p>
+                                            <p className="text-[10px] text-gray-900 uppercase font-bold transition">{e.role}</p>
                                         </div>
                                     </Link>
                                 ))}
@@ -159,12 +159,12 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
                             </div>
                             <div className="space-y-1">
                                 {matchedTickets.map((t: any) => (
-                                    <Link onClick={onClose} href={`/admin/orders`} key={t.id} className="flex items-center justify-between px-4 py-3 bg-white/30 hover:bg-gray-900 rounded-xl transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] group">
+                                    <Link onClick={onClose} href={`/admin/orders`} key={t.id} className="flex items-center justify-between px-4 py-3 bg-white/30 hover:bg-white/50 rounded-xl transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] group">
                                         <div>
-                                            <p className="font-bold text-gray-900 group-hover:text-white text-sm transition">{t.customer_name || 'Walk-in'}</p>
+                                            <p className="font-bold text-gray-900 text-sm transition">{t.customer_name || 'Walk-in'}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className={`text-[10px] uppercase font-bold transition ${t.status === 'PAID' ? 'text-gray-900 group-hover:text-white' : 'text-gray-500 group-hover:text-gray-300'}`}>{t.status}</p>
+                                            <p className={`text-[10px] uppercase font-bold transition ${t.status === 'PAID' ? 'text-gray-900' : 'text-gray-500'}`}>{t.status}</p>
                                         </div>
                                     </Link>
                                 ))}
