@@ -270,66 +270,80 @@ export default function InventoryPage() {
     );
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-1000 lg:px-6 lg:pb-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <PageHeader
-                    title="Inventory Management"
-                    description="Manage your inventory and pricing"
-                />
-
-                <button
-                    onClick={() => {
-                        // PowerSync automatically syncs data, just show a confirmation
-                        toast.success("Inventory data is synced via PowerSync. The table shows live data from the local cache.");
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-sm font-medium"
-                >
-                    <ArrowPathIcon className="w-4 h-4" />
-                    <span>Sync Status</span>
-                </button>
-
-                <Link
-                    href="/admin/inventory/logs"
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium"
-                >
-                    <ClipboardDocumentListIcon className="w-4 h-4" />
-                    <span>View Logs</span>
-                </Link>
-            </div>
-
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                <div className="relative">
-                    <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                        type="text"
-                        name='inventorySearch'
-                        placeholder="Search products..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 outline-none"
-                    />
+        <div className="max-w-full mx-auto pb-12">
+            <div className="flex items-center gap-4 mb-8">
+                <div className="p-3 bg-white rounded-2xl shadow-sm border border-gray-100">
+                    <ClipboardDocumentListIcon className="w-6 h-6 text-lime-600" />
+                </div>
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Inventory Management</h1>
+                    <p className="text-sm text-gray-500 font-medium">Track stock levels, set thresholds, and record adjustments.</p>
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-                <div>
+            <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
+                {/* Toolbar */}
+                <div className="px-8 py-6 border-b border-gray-100 bg-gray-50/50 flex flex-col xl:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h2 className="text-lg font-bold text-gray-900">
+                            Inventory Control
+                        </h2>
+                        <p className="text-sm text-gray-500 mt-0.5">
+                            Real-time stock monitoring and updates.
+                        </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+                        <div className="relative flex-1 min-w-[200px]">
+                            <MagnifyingGlassIcon className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                                type="text"
+                                name='inventorySearch'
+                                placeholder="Search products..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-lime-500/20 focus:border-lime-500 transition-all shadow-sm"
+                            />
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                toast.success("Inventory data is synced via PowerSync. The table shows live data from the local cache.");
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition text-sm font-medium shadow-sm whitespace-nowrap"
+                        >
+                            <ArrowPathIcon className="w-4 h-4" />
+                            <span>Sync Status</span>
+                        </button>
+
+                        <Link
+                            href="/admin/inventory/logs"
+                            className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition text-sm font-medium shadow-md shadow-gray-200 whitespace-nowrap"
+                        >
+                            <ClipboardDocumentListIcon className="w-4 h-4" />
+                            <span>View Logs</span>
+                        </Link>
+                    </div>
+                </div>
+
+                <div className="overflow-x-auto">
                     <table className="min-w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-gray-50 border-b border-gray-200 text-xs uppercase text-gray-500 font-semibold">
-                                <th className="px-6 py-4 rounded-tl-xl">Product</th>
+                        <thead className="bg-gray-50/50 border-b border-gray-100 font-semibold text-gray-900">
+                            <tr>
+                                <th className="px-8 py-4">Product</th>
                                 <th className="px-6 py-4 text-center">SKU</th>
                                 <th className="px-6 py-4 text-center">Current Stock</th>
                                 <th className="px-6 py-4 text-center">Threshold</th>
                                 <th className="px-6 py-4 text-center">Status</th>
                                 <th className="px-6 py-4 text-center">Reason</th>
-                                <th className="px-6 py-4 text-center rounded-tr-xl">Actions</th>
+                                <th className="px-6 py-4 text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {isLoading ? (
-                                <tr><td colSpan={7} className="px-6 py-8 text-center text-gray-500">Loading...</td></tr>
+                                <tr><td colSpan={7} className="px-8 py-12 text-center text-gray-500">Loading...</td></tr>
                             ) : filteredProducts.length === 0 ? (
-                                <tr><td colSpan={7} className="px-6 py-8 text-center text-gray-500">No products found.</td></tr>
+                                <tr><td colSpan={7} className="px-8 py-12 text-center text-gray-500">No products found.</td></tr>
                             ) : (
                                 filteredProducts.map((product: any) => {
                                     const currentStock = stockUpdates[product._id] ?? product.stock ?? 0;
@@ -345,11 +359,10 @@ export default function InventoryPage() {
                                     const numThreshold = Number(currentThreshold);
 
                                     return (
-                                        // ... (rest of the table row logic remains similar, but focusing on replacement)
-                                        <tr key={product._id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-6 py-4">
+                                        <tr key={product._id} className="hover:bg-gray-50/80 transition-colors">
+                                            <td className="px-8 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden shrink-0 text-gray-400">
+                                                    <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden shrink-0 text-gray-400 border border-gray-200">
                                                         {product.image ? (
                                                             <Image src={product.image} alt={product.name} width={40} height={40} className="object-cover w-full h-full" />
                                                         ) : (
@@ -357,13 +370,8 @@ export default function InventoryPage() {
                                                         )}
                                                     </div>
                                                     <div>
-                                                        <div className="font-medium text-gray-900">{product.name}</div>
-                                                        <div className="text-[10px] text-gray-400 font-mono">ID: {product._id}</div>
-                                                        <div className="text-xs text-gray-500">
-                                                            {typeof product.category === 'object' && product.category !== null
-                                                                ? (product.category as any).name
-                                                                : 'Category: ' + (product.category || 'Uncategorized')}
-                                                        </div>
+                                                        <div className="font-bold text-gray-900">{product.name}</div>
+                                                        <div className="text-[10px] text-gray-400 font-mono">ID: {product._id.substring(0, 8)}...</div>
                                                     </div>
                                                 </div>
                                             </td>
@@ -378,7 +386,7 @@ export default function InventoryPage() {
                                                     value={currentStock === '' ? '' : numStock.toString()}
                                                     onChange={(e) => handleStockChange(product._id, e.target.value)}
                                                     onFocus={(e) => e.target.select()}
-                                                    className={`w-24 text-center border rounded-lg py-1.5 text-sm outline-none transition
+                                                    className={`w-24 text-center border rounded-lg py-2 text-sm outline-none transition shadow-sm
                                                         ${stockChanged ? 'border-lime-500 ring-2 ring-lime-500/20 bg-lime-50' : 'border-gray-200 focus:border-lime-500'}`}
                                                 />
                                             </td>
@@ -390,21 +398,21 @@ export default function InventoryPage() {
                                                     value={currentThreshold === '' ? '' : numThreshold.toString()}
                                                     onChange={(e) => handleThresholdChange(product._id, e.target.value)}
                                                     onFocus={(e) => e.target.select()}
-                                                    className={`w-20 text-center border rounded-lg py-1.5 text-sm outline-none transition
+                                                    className={`w-20 text-center border rounded-lg py-2 text-sm outline-none transition shadow-sm
                                                         ${thresholdChanged ? 'border-blue-500 ring-2 ring-blue-500/20 bg-blue-50' : 'border-gray-200 focus:border-blue-500'}`}
                                                 />
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                                    ${numStock > numThreshold ? 'bg-green-100 text-green-800' :
-                                                        numStock > 0 ? 'bg-yellow-100 text-yellow-800' :
-                                                            'bg-red-100 text-red-800'}`}>
+                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border
+                                                    ${numStock > numThreshold ? 'bg-green-50 text-green-700 border-green-100' :
+                                                        numStock > 0 ? 'bg-yellow-50 text-yellow-700 border-yellow-100' :
+                                                            'bg-red-50 text-red-700 border-red-100'}`}>
                                                     {numStock > numThreshold ? 'In Stock' : numStock > 0 ? 'Low Stock' : 'Out of Stock'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 {stockChanged ? (
-                                                    <div className="w-full mx-auto">
+                                                    <div className="w-40 mx-auto">
                                                         <CustomSelect
                                                             options={ADJUSTMENT_REASONS.map(r => ({ label: r, value: r }))}
                                                             value={adjustmentReasons[product._id] || ''}
@@ -414,31 +422,31 @@ export default function InventoryPage() {
                                                         />
                                                     </div>
                                                 ) : (
-                                                    <span className="text-gray-400 text-sm">{isChanged ? '(No stock change)' : '—'}</span>
+                                                    <span className="text-gray-400 text-xs italic">{isChanged ? '(No stock change)' : '—'}</span>
                                                 )}
                                             </td>
                                             <td className="px-6 py-4 text-center h-16">
                                                 {isChanged && (
-                                                    <div className="flex items-center justify-center gap-2">
+                                                    <div className="inline-flex items-center justify-center gap-2 bg-white p-1 rounded-lg border border-gray-100 shadow-sm">
                                                         <button
                                                             onClick={() => handleCancel(product._id)}
                                                             disabled={isUpdating}
-                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-400 text-sm font-medium rounded-md hover:bg-gray-200 hover:text-gray-600 transition"
+                                                            className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-md transition"
                                                             title="Cancel"
                                                         >
-                                                            <XMarkIcon className="w-4 h-4" />Cancel
+                                                            <XMarkIcon className="w-5 h-5" />
                                                         </button>
                                                         <button
                                                             onClick={() => handleSaveChanges(product)}
                                                             disabled={isUpdating}
-                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-lime-500 text-white text-sm font-medium rounded-md hover:bg-lime-600 transition shadow-sm disabled:opacity-50"
+                                                            className="p-1.5 bg-lime-500 text-white rounded-md hover:bg-lime-600 transition shadow-sm disabled:opacity-50"
+                                                            title="Save"
                                                         >
                                                             {isUpdating ? (
-                                                                <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />
+                                                                <ArrowPathIcon className="w-5 h-5 animate-spin" />
                                                             ) : (
-                                                                <CheckIcon className="w-3.5 h-3.5" />
+                                                                <CheckIcon className="w-5 h-5" />
                                                             )}
-                                                            Save
                                                         </button>
                                                     </div>
                                                 )}

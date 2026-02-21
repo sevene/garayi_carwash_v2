@@ -9,6 +9,7 @@ export interface CartItem {
     sku: string;
     itemType?: 'service' | 'product';
     _id: string;
+    commission?: number;
 }
 
 export interface OpenTicket {
@@ -25,6 +26,7 @@ export interface OpenTicket {
         sku?: string;
         itemType?: string;
         _id?: string;
+        commission?: number;
         crew?: { id: string; name: string }[];
     }[];
     createdAt: string;

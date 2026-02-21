@@ -227,80 +227,86 @@ export default function AdminCustomersPage() {
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-1000 lg:px-6 lg:pb-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <PageHeader
-                    title="Customers"
-                    description="Manage your customer base"
-                />
-                <button
-                    onClick={handleAddClick}
-                    className="flex items-center gap-2 bg-lime-500 hover:bg-lime-600 text-white px-4 py-2 rounded-xl font-medium shadow-sm transition-all active:scale-95"
-                >
-                    <PlusIcon className="w-5 h-5" />
-                    <span>Add Customer</span>
-                </button>
+        <div className="max-w-full mx-auto pb-12">
+            <div className="flex items-center gap-4 mb-8">
+                <div className="p-3 bg-white rounded-2xl shadow-sm border border-gray-100">
+                    <UsersIcon className="w-6 h-6 text-lime-600" />
+                </div>
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Customer Management</h1>
+                    <p className="text-sm text-gray-500 font-medium">View and manage your customer database and vehicle records.</p>
+                </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
+                {/* Section Header with Search & Action */}
+                <div className="px-8 py-6 border-b border-gray-100 bg-gray-50/50 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h2 className="text-lg font-bold text-gray-900">
+                            All Customers
+                        </h2>
+                        <p className="text-sm text-gray-500 mt-0.5">
+                            Directory of all registered customers.
+                        </p>
+                    </div>
 
-                {/* Toolbar */}
-                <div className="p-4 border-b border-gray-100 bg-gray-50 flex flex-wrap gap-4 justify-between items-center">
-                    <h2 className="font-semibold text-gray-700 flex items-center gap-2">
-                        <UsersIcon className="w-5 h-5" />
-                        All Customers
-                    </h2>
-
-                    <div className="flex items-center gap-3 flex-1 max-w-md ml-auto">
-                        <div className="relative flex-1">
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                        <div className="relative flex-1 md:w-64">
                             <MagnifyingGlassIcon className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                             <input
                                 type="text"
                                 placeholder="Search customers..."
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
-                                className="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500/20 focus:border-lime-500 transition-all"
+                                className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-lime-500/20 focus:border-lime-500 transition-all shadow-sm"
                             />
                         </div>
+                        <button
+                            onClick={handleAddClick}
+                            className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-xl font-medium shadow-lg shadow-gray-200 hover:bg-gray-800 hover:-translate-y-0.5 transition-all text-sm whitespace-nowrap"
+                        >
+                            <PlusIcon className="w-4 h-4" />
+                            <span>Add Customer</span>
+                        </button>
                     </div>
                 </div>
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm text-gray-600">
-                        <thead className="bg-gray-50 border-b border-gray-200 font-bold text-gray-700 uppercase leading-normal">
+                        <thead className="bg-gray-50/50 border-b border-gray-100 font-semibold text-gray-900">
                             <tr>
-                                <th className="px-6 py-4">Customer</th>
-                                <th className="px-6 py-4 text-center">Contact</th>
-                                <th className="px-6 py-4 text-center">Vehicle</th>
-                                <th className="px-6 py-4 text-center">Pts</th>
-                                <th className="px-6 py-4 text-center">Actions</th>
+                                <th className="px-8 py-4">Customer</th>
+                                <th className="px-6 py-4">Contact Info</th>
+                                <th className="px-6 py-4">Vehicles</th>
+                                <th className="px-6 py-4 text-center">Loyalty Pts</th>
+                                <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-200">
+                        <tbody className="divide-y divide-gray-100">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                                    <td colSpan={5} className="px-8 py-12 text-center text-gray-500">
                                         Loading customers...
                                     </td>
                                 </tr>
                             ) : filteredCustomers.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                                    <td colSpan={5} className="px-8 py-12 text-center text-gray-500">
                                         No customers found.
                                     </td>
                                 </tr>
                             ) : (
                                 filteredCustomers.map((customer: Customer) => (
-                                    <tr key={customer._id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4">
+                                    <tr key={customer._id} className="hover:bg-gray-50/80 transition-colors group">
+                                        <td className="px-8 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-lime-100 flex items-center justify-center text-lime-700 font-bold text-lg shrink-0">
+                                                <div className="w-10 h-10 rounded-full bg-lime-100 flex items-center justify-center text-lime-700 font-bold text-lg shrink-0 border border-lime-200 shadow-sm">
                                                     {(customer.name || '?').charAt(0).toUpperCase()}
                                                 </div>
                                                 <div>
-                                                    <div className="font-bold text-gray-900">{customer.name}</div>
+                                                    <div className="font-bold text-gray-900 group-hover:text-lime-700 transition-colors">{customer.name}</div>
                                                     {customer.address.city && (
-                                                        <div className="text-xs text-gray-400 flex items-center gap-1">
+                                                        <div className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
                                                             <MapPinIcon className="w-3 h-3" />
                                                             {customer.address.city}
                                                         </div>
@@ -308,69 +314,68 @@ export default function AdminCustomersPage() {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <div className="inline-block text-left space-y-1">
+                                        <td className="px-6 py-4">
+                                            <div className="space-y-1.5">
                                                 {customer.phone && (
-                                                    <div className="flex items-center gap-2">
-                                                        <PhoneIcon className="w-4 h-4 text-gray-400" />
+                                                    <div className="flex items-center gap-2 text-xs">
+                                                        <div className="p-1 bg-gray-100 rounded text-gray-500">
+                                                            <PhoneIcon className="w-3 h-3" />
+                                                        </div>
                                                         <span className='font-medium text-gray-700'>{customer.phone}</span>
                                                     </div>
                                                 )}
                                                 {customer.email && (
-                                                    <div className="flex items-center gap-2">
-                                                        <EnvelopeIcon className="w-4 h-4 text-gray-400" />
-                                                        <span className="text-xs text-gray-500">{customer.email}</span>
+                                                    <div className="flex items-center gap-2 text-xs">
+                                                        <div className="p-1 bg-gray-100 rounded text-gray-500">
+                                                            <EnvelopeIcon className="w-3 h-3" />
+                                                        </div>
+                                                        <span className="text-gray-500">{customer.email}</span>
                                                     </div>
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-center">
-
+                                        <td className="px-6 py-4">
                                             {customer.cars && customer.cars.length > 0 ? (
-                                                <div className="flex flex-col gap-2 items-center">
+                                                <div className="flex flex-col gap-2">
                                                     {customer.cars.map((car, idx) => (
-                                                        <div key={idx} className="bg-gray-50 p-2.5 rounded-lg border border-gray-200 inline-block min-w-[200px]">
-                                                            <div className="flex items-center gap-3 justify-left">
-                                                                <span
-                                                                    className="w-6 h-6 rounded-sm border border-gray-300 shadow-sm"
-                                                                    style={{ backgroundColor: car.color }}
-                                                                    title={car.color}
-                                                                />
-                                                                <div>
-                                                                    <div className="font-bold text-gray-800 leading-none mb-1.5 uppercase text-center">
-                                                                        {car.plateNumber || 'No Plate'}
-                                                                    </div>
-                                                                    <div className="text-xs text-gray-500 flex items-center justify-center gap-1.5 flex-wrap">
-                                                                        <span>
-                                                                            {car.makeModel}
-                                                                        </span>
-                                                                    </div>
+                                                        <div key={idx} className="bg-gray-50/80 p-2 rounded-lg border border-gray-100 flex items-center gap-3 max-w-xs hover:border-gray-200 transition-colors">
+                                                            <span
+                                                                className="w-2 h-8 rounded-full shadow-sm shrink-0"
+                                                                style={{ backgroundColor: car.color || '#e5e7eb' }}
+                                                                title={car.color}
+                                                            />
+                                                            <div>
+                                                                <div className="font-bold text-gray-900 text-xs uppercase tracking-wide">
+                                                                    {car.plateNumber || 'No Plate'}
+                                                                </div>
+                                                                <div className="text-[10px] text-gray-500 uppercase">
+                                                                    {car.makeModel}
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     ))}
                                                 </div>
                                             ) : (
-                                                <span className="text-gray-400 text-xs italic">No car details</span>
+                                                <span className="text-gray-400 text-xs italic bg-gray-50 px-2 py-1 rounded">No vehicles</span>
                                             )}
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <span className="inline-block px-3 py-1 rounded-full bg-lime-100 text-lime-800 font-bold text-xs">
-                                                {customer.loyaltyPoints}
+                                            <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-lime-50 text-lime-700 font-bold text-xs border border-lime-100">
+                                                {customer.loyaltyPoints} pts
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <div className="flex justify-center gap-2">
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button
                                                     onClick={() => handleEditClick(customer)}
-                                                    className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                                     title="Edit"
                                                 >
                                                     <PencilSquareIcon className="w-5 h-5" />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteClick(customer._id, customer.name)}
-                                                    className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                     title="Delete"
                                                 >
                                                     <TrashIcon className="w-5 h-5" />
@@ -387,8 +392,8 @@ export default function AdminCustomersPage() {
 
             {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide bg-white rounded-2xl shadow-2xl">
                         <CustomerForm
                             formData={formData}
                             setFormData={setFormData}

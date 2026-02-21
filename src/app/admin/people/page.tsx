@@ -334,162 +334,216 @@ export default function AdminEmployeesPage() {
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-1000 lg:px-6 lg:pb-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <PageHeader
-                    title={activeTab === 'employees' ? 'Employees' : 'Roles'}
-                    description={activeTab === 'employees' ? 'Manage staff access and permissions' : 'Configure user roles and system privileges'}
-                />
-                <div className="flex gap-2 bg-gray-50 p-1 rounded-xl border border-white">
-                    <button onClick={() => setActiveTab('employees')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'employees' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Employees</button>
-                    <button onClick={() => setActiveTab('roles')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'roles' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Roles</button>
+        <div className="max-w-full mx-auto pb-12">
+            <div className="flex items-center gap-4 mb-8">
+                <div className="p-3 bg-white rounded-2xl shadow-sm border border-gray-100">
+                    <IdentificationIcon className="w-6 h-6 text-lime-600" />
+                </div>
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">People & Access</h1>
+                    <p className="text-sm text-gray-500 font-medium">Manage your team members and their system permissions.</p>
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                <div className="p-4 border-b border-gray-100 bg-gray-50 flex flex-wrap gap-4 justify-between items-center">
-                    <h2 className="font-semibold text-gray-700 flex items-center gap-2">
-                        {activeTab === 'employees' ? <IdentificationIcon className="w-5 h-5" /> : <ShieldCheckIcon className="w-5 h-5" />}
-                        {activeTab === 'employees' ? 'All Staff' : 'All Roles'}
-                    </h2>
-                    <div className="flex items-center gap-3 flex-1 max-w-md ml-auto">
-                        <div className="relative flex-1">
-                            <MagnifyingGlassIcon className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                            <input
-                                type="text"
-                                placeholder={`Search ${activeTab}...`}
-                                value={searchQuery}
-                                onChange={e => setSearchQuery(e.target.value)}
-                                className="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500/20 focus:border-lime-500 transition-all"
-                            />
+            <div className="flex flex-col gap-6">
+                {/* Top Tabs Navigation */}
+                <div className="flex gap-2 p-1 bg-gray-100/50 rounded-xl w-fit border border-gray-200/50">
+                    <button
+                        onClick={() => setActiveTab('employees')}
+                        className={`flex items-center gap-2 px-6 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${activeTab === 'employees'
+                            ? 'bg-white text-gray-900 shadow-sm ring-1 ring-black/5'
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                            }`}
+                    >
+                        <IdentificationIcon className={`w-4 h-4 ${activeTab === 'employees' ? 'text-lime-600' : 'text-gray-400'}`} />
+                        Employees
+                        <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] ${activeTab === 'employees' ? 'bg-lime-50 text-lime-700' : 'bg-gray-200 text-gray-500'}`}>
+                            {employees.length}
+                        </span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('roles')}
+                        className={`flex items-center gap-2 px-6 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${activeTab === 'roles'
+                            ? 'bg-white text-gray-900 shadow-sm ring-1 ring-black/5'
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                            }`}
+                    >
+                        <ShieldCheckIcon className={`w-4 h-4 ${activeTab === 'roles' ? 'text-lime-600' : 'text-gray-400'}`} />
+                        Roles & Permissions
+                        <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] ${activeTab === 'roles' ? 'bg-lime-50 text-lime-700' : 'bg-gray-200 text-gray-500'}`}>
+                            {roles.length}
+                        </span>
+                    </button>
+                </div>
+
+                {/* Main Content Area */}
+                <div className="w-full space-y-6">
+                    <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
+
+                        {/* Section Header with Search & Action */}
+                        <div className="px-8 py-6 border-b border-gray-100 bg-gray-50/50 flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div>
+                                <h2 className="text-lg font-bold text-gray-900">
+                                    {activeTab === 'employees' ? 'Staff Directory' : 'System Roles'}
+                                </h2>
+                                <p className="text-sm text-gray-500 mt-0.5">
+                                    {activeTab === 'employees'
+                                        ? "Manage your employee profiles, contacts, and assignments."
+                                        : "Configure access levels and permissions for your team."}
+                                </p>
+                            </div>
+
+                            <div className="flex items-center gap-3 w-full md:w-auto">
+                                <div className="relative flex-1 md:w-64">
+                                    <MagnifyingGlassIcon className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                                    <input
+                                        type="text"
+                                        placeholder={`Search ${activeTab}...`}
+                                        value={searchQuery}
+                                        onChange={e => setSearchQuery(e.target.value)}
+                                        className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-lime-500/20 focus:border-lime-500 transition-all shadow-sm"
+                                    />
+                                </div>
+                                <button
+                                    onClick={activeTab === 'employees' ? handleAddEmployeeClick : handleAddRoleClick}
+                                    className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-xl font-medium shadow-lg shadow-gray-200 hover:bg-gray-800 hover:-translate-y-0.5 transition-all text-sm whitespace-nowrap"
+                                >
+                                    <PlusIcon className="w-4 h-4" />
+                                    <span>Add {activeTab === 'employees' ? 'Employee' : 'Role'}</span>
+                                </button>
+                            </div>
                         </div>
-                        <button
-                            onClick={activeTab === 'employees' ? handleAddEmployeeClick : handleAddRoleClick}
-                            className="flex items-center gap-2 bg-lime-500 hover:bg-lime-600 text-white px-3 py-1.5 rounded-lg font-medium shadow-sm transition-all active:scale-95 text-sm ml-2"
-                        >
-                            <PlusIcon className="w-4 h-4" />
-                            <span>Add {activeTab === 'employees' ? 'Employee' : 'Role'}</span>
-                        </button>
+
+                        {/* Content Body (Tables) */}
+                        <div className="overflow-x-auto">
+                            {activeTab === 'employees' ? (
+                                <table className="w-full text-left text-sm text-gray-600">
+                                    <thead className="bg-gray-50/50 border-b border-gray-100 font-semibold text-gray-900">
+                                        <tr>
+                                            <th className="px-8 py-4">Employee</th>
+                                            <th className="px-6 py-4">Role</th>
+                                            <th className="px-6 py-4">Contact</th>
+                                            <th className="px-6 py-4 text-center">Status</th>
+                                            <th className="px-6 py-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {isLoading ? (
+                                            <tr><td colSpan={5} className="px-8 py-12 text-center text-gray-500">Loading employees...</td></tr>
+                                        ) : filteredEmployees.length === 0 ? (
+                                            <tr><td colSpan={5} className="px-8 py-12 text-center text-gray-500">No employees found matching your search.</td></tr>
+                                        ) : (
+                                            filteredEmployees.map((employee: Employee) => (
+                                                <tr key={employee._id} className="hover:bg-gray-50/80 transition-colors group">
+                                                    <td className="px-8 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shrink-0 shadow-sm ${getAvatarColor(employee.name)}`}>
+                                                                {employee.name.charAt(0).toUpperCase()}
+                                                            </div>
+                                                            <div>
+                                                                <div className="font-bold text-gray-900 group-hover:text-lime-700 transition-colors">{employee.name}</div>
+                                                                <div className="text-xs text-gray-500 font-medium">@{employee.username}</div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                                                            {getRoleDisplayName(employee.role)}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="space-y-1">
+                                                            {employee.contactInfo?.phone && (
+                                                                <div className="flex items-center gap-2 text-xs">
+                                                                    <PhoneIcon className="w-3.5 h-3.5 text-gray-400" />
+                                                                    <span className="font-medium text-gray-700">{employee.contactInfo.phone}</span>
+                                                                </div>
+                                                            )}
+                                                            {employee.contactInfo?.email && (
+                                                                <div className="flex items-center gap-2 text-xs">
+                                                                    <EnvelopeIcon className="w-3.5 h-3.5 text-gray-400" />
+                                                                    <span className="text-gray-500">{employee.contactInfo.email}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${employee.status === 'active'
+                                                            ? 'bg-green-50 text-green-700 border-green-200'
+                                                            : 'bg-red-50 text-red-700 border-red-200'
+                                                            }`}>
+                                                            {employee.status === 'active' && <span className="w-1.5 h-1.5 rounded-full bg-green-600 mr-1.5 animate-pulse"></span>}
+                                                            <span className="capitalize">{employee.status}</span>
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <button onClick={() => handleEditEmployeeClick(employee)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><PencilSquareIcon className="w-5 h-5" /></button>
+                                                            <button onClick={() => handleDeleteEmployeeClick(employee._id, employee.name)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><TrashIcon className="w-5 h-5" /></button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            ) : (
+                                <table className="w-full text-left text-sm text-gray-600">
+                                    <thead className="bg-gray-50/50 border-b border-gray-100 font-semibold text-gray-900">
+                                        <tr>
+                                            <th className="px-8 py-4">Display Name</th>
+                                            <th className="px-6 py-4">System ID</th>
+                                            <th className="px-6 py-4">Permissions</th>
+                                            <th className="px-6 py-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {isLoading ? (
+                                            <tr><td colSpan={4} className="px-8 py-12 text-center text-gray-500">Loading roles...</td></tr>
+                                        ) : filteredRoles.length === 0 ? (
+                                            <tr><td colSpan={4} className="px-8 py-12 text-center text-gray-500">No roles found.</td></tr>
+                                        ) : (
+                                            filteredRoles.map((role: Role) => (
+                                                <tr key={role._id} className="hover:bg-gray-50/80 transition-colors group">
+                                                    <td className="px-8 py-4 font-bold text-gray-900">{role.displayName}</td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="inline-flex items-center px-2 py-1 rounded font-mono text-xs text-gray-500 bg-gray-50 border border-gray-100">
+                                                            {role.name}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-wrap gap-1.5">
+                                                            {role.permissions?.slice(0, 3).map(p => (
+                                                                <span key={p} className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-xs border border-blue-100 font-medium">{p.replace(/_/g, ' ')}</span>
+                                                            ))}
+                                                            {role.permissions?.length > 3 && (
+                                                                <span className="px-2 py-0.5 rounded-md bg-gray-50 text-gray-500 text-xs border border-gray-200">+ {role.permissions.length - 3} more</span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <button onClick={() => handleEditRoleClick(role)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><PencilSquareIcon className="w-5 h-5" /></button>
+                                                            {role.name !== 'admin' && role.name !== 'staff' && (
+                                                                <button onClick={() => handleDeleteRoleClick(role._id, role.displayName)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><TrashIcon className="w-5 h-5" /></button>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
                     </div>
                 </div>
-
-                <div className="overflow-x-auto">
-                    {activeTab === 'employees' ? (
-                        <table className="w-full text-left text-sm text-gray-600">
-                            <thead className="bg-gray-50 border-b border-gray-200 font-bold text-gray-700 uppercase leading-normal">
-                                <tr>
-                                    <th className="px-6 py-4">Employee</th>
-                                    <th className="px-6 py-4 text-center">Role</th>
-                                    <th className="px-6 py-4 text-center">Contact</th>
-                                    <th className="px-6 py-4 text-center">Status</th>
-                                    <th className="px-6 py-4 text-center">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                                {isLoading ? (
-                                    <tr><td colSpan={5} className="px-6 py-12 text-center text-gray-500">Loading employees...</td></tr>
-                                ) : filteredEmployees.length === 0 ? (
-                                    <tr><td colSpan={5} className="px-6 py-12 text-center text-gray-500">No employees found.</td></tr>
-                                ) : (
-                                    filteredEmployees.map((employee: Employee) => (
-                                        <tr key={employee._id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shrink-0 ${getAvatarColor(employee.name)}`}>
-                                                        {employee.name.charAt(0).toUpperCase()}
-                                                    </div>
-                                                    <div>
-                                                        <div className="font-bold text-gray-900">{employee.name}</div>
-                                                        <div className="text-xs text-gray-500 font-medium">@{employee.username}</div>
-                                                        <div className="text-[10px] text-gray-400">PIN: {employee.pin || '****'}</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-600">{getRoleDisplayName(employee.role)}</span>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <div className="inline-block text-left space-y-1">
-                                                    {employee.contactInfo?.phone && (
-                                                        <div className="flex items-center gap-2">
-                                                            <PhoneIcon className="w-4 h-4 text-gray-400" />
-                                                            <span className='font-medium text-gray-700'>{employee.contactInfo.phone}</span>
-                                                        </div>
-                                                    )}
-                                                    {employee.contactInfo?.email && (
-                                                        <div className="flex items-center gap-2">
-                                                            <EnvelopeIcon className="w-4 h-4 text-gray-400" />
-                                                            <span className="text-xs text-gray-500">{employee.contactInfo.email}</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${employee.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                    {employee.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <div className="flex justify-center gap-2">
-                                                    <button onClick={() => handleEditEmployeeClick(employee)} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"><PencilSquareIcon className="w-5 h-5" /></button>
-                                                    <button onClick={() => handleDeleteEmployeeClick(employee._id, employee.name)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"><TrashIcon className="w-5 h-5" /></button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    ) : (
-                        <table className="w-full text-left text-sm text-gray-600">
-                            <thead className="bg-gray-50 border-b border-gray-200 font-bold text-gray-700 uppercase leading-normal">
-                                <tr>
-                                    <th className="px-6 py-4">Display Name</th>
-                                    <th className="px-6 py-4">System Name</th>
-                                    <th className="px-6 py-4">Permissions</th>
-                                    <th className="px-6 py-4 text-center">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                                {isLoading ? (
-                                    <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-500">Loading roles...</td></tr>
-                                ) : filteredRoles.length === 0 ? (
-                                    <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-500">No roles found.</td></tr>
-                                ) : (
-                                    filteredRoles.map((role: Role) => (
-                                        <tr key={role._id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-6 py-4 font-bold text-gray-900">{role.displayName}</td>
-                                            <td className="px-6 py-4 font-mono text-xs text-gray-500">{role.name}</td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex flex-wrap gap-1">
-                                                    {role.permissions?.slice(0, 3).map(p => (
-                                                        <span key={p} className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-xs border border-blue-100">{p.replace(/_/g, ' ')}</span>
-                                                    ))}
-                                                    {role.permissions?.length > 3 && (
-                                                        <span className="px-2 py-0.5 rounded-full bg-gray-50 text-gray-500 text-xs border border-gray-100">+{role.permissions.length - 3} more</span>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <div className="flex justify-center gap-2">
-                                                    <button onClick={() => handleEditRoleClick(role)} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"><PencilSquareIcon className="w-5 h-5" /></button>
-                                                    {role.name !== 'admin' && role.name !== 'staff' && (
-                                                        <button onClick={() => handleDeleteRoleClick(role._id, role.displayName)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"><TrashIcon className="w-5 h-5" /></button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    )}
-                </div>
             </div>
 
+            {/* Modals remain the same, just keeping them in the DOM */}
             {isEmployeeModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-4xl h-auto max-h-[95vh] overflow-y-auto rounded-2xl shadow-2xl">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="w-full max-w-4xl h-auto max-h-[95vh] overflow-y-auto rounded-2xl shadow-2xl bg-white">
                         <EmployeeForm
                             formData={employeeFormData}
                             setFormData={setEmployeeFormData}
@@ -504,8 +558,8 @@ export default function AdminEmployeesPage() {
             )}
 
             {isRoleModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-4xl h-auto max-h-[95vh] overflow-y-auto rounded-2xl shadow-2xl">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="w-full max-w-4xl h-auto max-h-[95vh] overflow-y-auto rounded-2xl shadow-2xl bg-white">
                         <RoleForm
                             formData={roleFormData}
                             setFormData={setRoleFormData}

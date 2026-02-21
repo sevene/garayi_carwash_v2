@@ -44,22 +44,25 @@ export function POSItemCard({ item, status, onItemClick }: POSItemCardProps) {
             <div className="absolute inset-0 bg-lime-500/0 group-active:bg-lime-500/5 transition-colors pointer-events-none" />
 
             {/* Top Section: Badge & Name */}
-            <div className="relative z-10">
-                <div className="flex gap-2 mb-2">
-                    <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold tracking-wide uppercase shadow-sm
+            <div className="relative z-10 w-full">
+                <div className="flex justify-between items-start gap-2 mb-1">
+                    <h3 className="font-normal text-lg text-gray-800 leading-tight line-clamp-2 flex-1 pt-0.5" title={item.name}>
+                        {item.name}
+                    </h3>
+
+                    <span className={`shrink-0 px-2 py-0.5 rounded text-[10px] font-bold tracking-wide uppercase shadow-sm mt-1
                             ${isService ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-600'}`}>
                         {isService ? 'Service' : 'Product'}
                     </span>
+                </div>
+
+                <div className="flex gap-2 mb-2 min-h-[20px]">
                     {status.isLow && (
                         <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-600 tracking-wide uppercase animate-pulse">
                             Low Stock
                         </span>
                     )}
                 </div>
-
-                <h3 className="font-normal text-lg text-gray-800 leading-tight line-clamp-2" title={item.name}>
-                    {item.name}
-                </h3>
 
                 <div className="mt-1 space-y-0.5 text-xs text-gray-400">
                     {isService && Number((item as Service).durationMinutes) > 0 && (

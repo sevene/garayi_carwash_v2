@@ -45,7 +45,11 @@ export default function RevenueAreaChart({ data }: RevenueAreaChartProps) {
                 fill: true,
                 backgroundColor: (context: any) => {
                     const ctx = context.chart.ctx;
-                    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                    const chartArea = context.chart.chartArea;
+                    if (!chartArea) {
+                        return 'rgba(132, 204, 22, 0.2)'; // Return fallback color if chart bounds are not ready
+                    }
+                    const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
                     gradient.addColorStop(0, 'rgba(132, 204, 22, .9)'); // lime-500
                     gradient.addColorStop(1, 'rgba(132, 204, 22, .1)');
                     return gradient;

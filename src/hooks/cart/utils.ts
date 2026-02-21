@@ -32,6 +32,7 @@ export const mapDatabaseTicketToCart = (ticket: OpenTicket, customers: any[]) =>
             quantity: item.quantity,
             price: item.unitPrice,
             itemTotal: item.unitPrice * item.quantity,
+            commission: item.commission || 0,
             _id: uniqueItemId,
             name: item.productName,
             sku: derivedSku,
@@ -54,6 +55,8 @@ export const prepareTicketItemsForDb = (
     cartItems: CartItem[],
     itemCrew: Record<string, string[]>,
     employees: any[],
+    services: any[],
+    variants: any[],
     ticketId: string
 ) => {
     return cartItems.map((item, index) => {
@@ -67,6 +70,29 @@ export const prepareTicketItemsForDb = (
         const validUuid = uuidMatch ? uuidMatch[0] : null;
         const isService = item.itemType === 'service' || item.sku?.startsWith('SRV') || item.product.sku?.startsWith('SRV');
 
+        let calculatedCommission = 0;
+        if (crewIds.length > 0) {
+            const matchingVariant = variants.find((v: any) => v.id === validUuid || v.id === item.product._id);
+            const targetSvcId = matchingVariant ? matchingVariant.service_id : (validUuid || item.product._id);
+
+            const svc = services.find((s: any) => s.id === targetSvcId);
+            if (svc && Number(svc.labor_cost) > 0) {
+                calculatedCommission = svc.labor_cost_type === 'percentage'
+                    ? (Number(svc.labor_cost) / 100) * Number(item.price)
+                    : Number(svc.labor_cost);
+            } else {
+                crewIds.forEach(id => {
+                    const emp = employees.find((e: any) => e._id === id);
+                    if (emp && emp.compensation) {
+                        const comp = typeof emp.compensation === 'string' ? JSON.parse(emp.compensation) : emp.compensation;
+                        if (comp?.payType === 'commission' && Number(comp.commission) > 0) {
+                            calculatedCommission += (Number(comp.commission) / 100) * Number(item.price);
+                        }
+                    }
+                });
+            }
+        }
+
         return {
             id: uuidv4(),
             ticket_id: ticketId,
@@ -76,6 +102,7 @@ export const prepareTicketItemsForDb = (
             product_name: item.name,
             quantity: item.quantity,
             unit_price: item.price,
+            commission: calculatedCommission,
             crew_snapshot: JSON.stringify(crewSnapshot),
             sort_order: index // 0-based index preserves order
         };

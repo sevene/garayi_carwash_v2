@@ -2,10 +2,13 @@
 
 import React, { useState, useMemo } from 'react';
 import {
-    PencilSquareIcon,
+    PencilIcon,
     TrashIcon,
     TagIcon,
-    ChevronRightIcon
+    ChevronRightIcon,
+    PlusIcon,
+    CheckIcon,
+    ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import { Category, buildCategoryTree, CategoryTreeNode } from '@/lib/categories';
 import { toast } from 'sonner';
@@ -26,8 +29,9 @@ const EMPTY_CATEGORY: Category = {
 export default function AdminCategoriesPage() {
     const db = usePowerSync();
     const [formData, setFormData] = useState<Category>(EMPTY_CATEGORY);
-    const [isEditing, setIsEditing] = useState(false);
+    const [editingCategory, setEditingCategory] = useState<Category | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     // Fetch categories from PowerSync
@@ -44,16 +48,18 @@ export default function AdminCategoriesPage() {
         }));
     }, [categoriesData]);
 
+    const categoryTree = useMemo(() => buildCategoryTree(categories), [categories]);
+
     const handleEdit = (category: Category) => {
         setFormData(category);
-        setIsEditing(true);
+        setEditingCategory(category);
         setError(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleCancel = () => {
         setFormData(EMPTY_CATEGORY);
-        setIsEditing(false);
+        setEditingCategory(null);
         setError(null);
     };
 
@@ -65,13 +71,15 @@ export default function AdminCategoriesPage() {
         }));
     };
 
-    const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`Delete category "${name}"?`)) return;
+    const handleDelete = async (id: string) => {
+        const category = categories.find(c => c._id === id);
+        if (!category) return;
+        if (!confirm(`Delete category "${category.name}"?`)) return;
         if (!db) return;
 
         try {
             await db.execute('DELETE FROM categories WHERE id = ?', [id]);
-            if (formData._id === id) handleCancel();
+            if (editingCategory?._id === id) handleCancel();
             toast.success("Category deleted.");
         } catch (err) {
             console.error(err);
@@ -83,12 +91,13 @@ export default function AdminCategoriesPage() {
         e.preventDefault();
         if (isSaving || !db) return;
         setIsSaving(true);
+        setLoading(true);
         setError(null);
 
         try {
             const now = new Date().toISOString();
 
-            if (isEditing) {
+            if (editingCategory) {
                 await db.execute(
                     `UPDATE categories SET name = ?, description = ?, parent_id = ?, active = ? WHERE id = ?`,
                     [formData.name, formData.description, formData.parentId, formData.active ? 1 : 0, formData._id]
@@ -110,178 +119,184 @@ export default function AdminCategoriesPage() {
             toast.error("Failed to save category.");
         } finally {
             setIsSaving(false);
+            setLoading(false);
         }
     };
 
-    const categoryTree = buildCategoryTree(categories);
-
-    const renderCategoryRow = (node: CategoryTreeNode, level = 0) => {
-        const hasChildren = node.children && node.children.length > 0;
-        const isSubcategory = level > 0;
-
-        return (
-            <React.Fragment key={node._id}>
-                <tr className="hover:bg-gray-50 transition">
-                    <td className="px-6 py-4 font-medium text-gray-900">
-                        <div className="flex items-center gap-2" style={{ paddingLeft: `${level * 24}px` }}>
-                            {level > 0 && <ChevronRightIcon className="w-4 h-4 text-gray-400" />}
-                            <span>{node.name}</span>
-                            {isSubcategory ? (
-                                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                                    Subcategory
-                                </span>
-                            ) : (
-                                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                                    Parent
-                                </span>
-                            )}
-                        </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 truncate max-w-xs">{node.description || '-'}</td>
-                    <td className="px-6 py-4 text-center">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${node.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
-                            {node.active ? 'Active' : 'Inactive'}
-                        </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                        <div className="flex justify-center gap-2">
-                            <button
-                                onClick={() => handleEdit(node)}
-                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full transition"
-                            >
-                                <PencilSquareIcon className="w-5 h-5" />
-                            </button>
-                            <button
-                                onClick={() => handleDelete(node._id, node.name)}
-                                className="p-1.5 text-red-600 hover:bg-red-50 rounded-full transition"
-                            >
-                                <TrashIcon className="w-5 h-5" />
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-                {hasChildren && node.children!.map(child => renderCategoryRow(child, level + 1))}
-                {hasChildren && (
-                    <tr className="border-b border-gray-100">
-                        <td colSpan={4} className="p-0"></td>
-                    </tr>
-                )}
-            </React.Fragment>
-        );
-    };
-
-    const topLevelCategories = categories.filter((c: Category) => !c.parentId);
-
     return (
-        <div className="space-y-6 animate-in fade-in duration-1000 lg:px-6 lg:pb-6">
-            <PageHeader
-                title="Categories"
-                description="Organize your products into categories and subcategories."
-            />
+        <div className="max-w-full mx-auto pb-12">
+            <div className="flex items-center gap-4 mb-8">
+                <div className="p-3 bg-white rounded-2xl shadow-sm border border-gray-100">
+                    <TagIcon className="w-6 h-6 text-lime-600" />
+                </div>
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Category Management</h1>
+                    <p className="text-sm text-gray-500 font-medium">Organize products into categories and subcategories.</p>
+                </div>
+            </div>
 
-            <div className="flex flex-col lg:flex-row gap-8 items-start">
-                <div className="w-full lg:flex-1 bg-white rounded-xl shadow-lg overflow-hidden">
-                    <div className="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-                        <h2 className="font-semibold text-gray-700 flex items-center gap-2">
-                            <TagIcon className="w-5 h-5" />
-                            Categories
-                        </h2>
-                    </div>
-
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full text-left border-collapse">
-                            <thead className="bg-gray-50 text-xs uppercase text-gray-500 font-semibold">
-                                <tr>
-                                    <th className="px-6 py-3">Name</th>
-                                    <th className="px-6 py-3">Description</th>
-                                    <th className="px-6 py-3 text-center">Status</th>
-                                    <th className="px-6 py-3 text-center">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {isLoading ? (
-                                    <tr><td colSpan={4} className="p-6 text-center text-gray-500">Loading...</td></tr>
-                                ) : categories.length === 0 ? (
-                                    <tr><td colSpan={4} className="p-6 text-center text-gray-500">No categories found.</td></tr>
-                                ) : (
-                                    categoryTree.map(node => renderCategoryRow(node))
-                                )}
-                            </tbody>
-                        </table>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Category List */}
+                <div className="lg:col-span-2 space-y-6">
+                    <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
+                        <div className="px-8 py-6 border-b border-gray-100 bg-gray-50/50">
+                            <h2 className="text-lg font-bold text-gray-900">Categories</h2>
+                            <p className="text-sm text-gray-500 mt-0.5">Existing product categories</p>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm text-gray-600">
+                                <thead className="bg-gray-50/50 border-b border-gray-100 font-semibold text-gray-900">
+                                    <tr>
+                                        <th className="px-8 py-4">Name</th>
+                                        <th className="px-6 py-4 text-center">Subcategories</th>
+                                        <th className="px-6 py-4 text-center">Products</th>
+                                        <th className="px-6 py-4 text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    {isLoading ? (
+                                        <tr><td colSpan={4} className="px-8 py-12 text-center text-gray-500">Loading...</td></tr>
+                                    ) : categories.length === 0 ? (
+                                        <tr><td colSpan={4} className="px-8 py-12 text-center text-gray-500">No categories found.</td></tr>
+                                    ) : (
+                                        categoryTree.map((node) => (
+                                            <React.Fragment key={node._id}>
+                                                <tr className="hover:bg-gray-50/80 transition-colors group">
+                                                    <td className="px-8 py-4 font-bold text-gray-900">
+                                                        {node.name}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center text-gray-500">
+                                                        {node.children?.length || 0}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center text-gray-500">
+                                                        -
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <button
+                                                                onClick={() => handleEdit(node)}
+                                                                className="p-2 text-gray-400 hover:text-lime-600 hover:bg-lime-50 rounded-lg transition-colors"
+                                                            >
+                                                                <PencilIcon className="w-5 h-5" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDelete(node._id)}
+                                                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                            >
+                                                                <TrashIcon className="w-5 h-5" />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                {/* Subcategories */}
+                                                {node.children?.map(sub => (
+                                                    <tr key={sub._id} className="hover:bg-gray-50/80 transition-colors group/sub">
+                                                        <td className="px-8 py-3 pl-16 flex items-center gap-2 text-gray-600">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-gray-300"></div>
+                                                            {sub.name}
+                                                        </td>
+                                                        <td className="px-6 py-3 text-center text-xs text-gray-400">
+                                                            -
+                                                        </td>
+                                                        <td className="px-6 py-3 text-center text-xs text-gray-400">
+                                                            -
+                                                        </td>
+                                                        <td className="px-6 py-3 text-center">
+                                                            <div className="flex items-center justify-center gap-2 opacity-0 group-hover/sub:opacity-100 transition-opacity">
+                                                                <button
+                                                                    onClick={() => handleEdit(sub)}
+                                                                    className="p-1.5 text-gray-400 hover:text-lime-600 hover:bg-lime-50 rounded-lg transition-colors"
+                                                                >
+                                                                    <PencilIcon className="w-4 h-4" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDelete(sub._id)}
+                                                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                                >
+                                                                    <TrashIcon className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </React.Fragment>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
-                <div className="w-full lg:w-96 shrink-0">
-                    <div className="bg-white rounded-xl shadow-lg sticky top-6 overflow-hidden">
-                        <div className="p-4 border-b border-gray-100 bg-gray-50">
-                            <h2 className="font-semibold text-gray-800">
-                                {isEditing ? 'Edit Category' : 'Create New Category'}
-                            </h2>
-                        </div>
-
-                        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-                            {error && (
-                                <div className="p-3 bg-red-100 text-red-700 text-sm rounded-lg border border-red-200">
-                                    {error}
-                                </div>
-                            )}
-
+                {/* Form */}
+                <div className="lg:col-span-1">
+                    <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgb(0,0,0,0.04)] border border-gray-100 p-8 sticky top-6">
+                        <h2 className="text-xl font-bold text-gray-900 mb-6">
+                            {editingCategory ? 'Edit Category' : 'Add New Category'}
+                        </h2>
+                        <form onSubmit={handleSubmit} className="space-y-5">
                             <div>
-                                <CustomInput
-                                    label="Name"
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Name
+                                </label>
+                                <input
+                                    type="text"
                                     name="name"
-                                    value={formData.name || ''}
+                                    value={formData.name}
                                     onChange={handleChange}
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-lime-500/20 focus:border-lime-500 transition-all text-sm font-medium"
+                                    placeholder="e.g. Beverages"
                                     required
-                                    placeholder="e.g. Coffee"
                                 />
                             </div>
 
                             <div>
-                                <CustomSelect
-                                    label="Parent Category (Optional)"
-                                    value={formData.parentId || ''}
-                                    onChange={(val) => setFormData(prev => ({ ...prev, parentId: val === '' ? null : String(val) }))}
-                                    options={[
-                                        { label: 'None (Top-level)', value: '' },
-                                        ...topLevelCategories
-                                            .filter((c: Category) => c._id !== formData._id)
-                                            .map((cat: Category) => ({ label: cat.name, value: cat._id }))
-                                    ]}
-                                    placeholder="Select a parent category"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">Select a parent to create a subcategory</p>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Parent Category
+                                </label>
+                                <div className="relative">
+                                    <select
+                                        name="parentId"
+                                        value={formData.parentId || ''}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-lime-500/20 focus:border-lime-500 transition-all text-sm font-medium appearance-none"
+                                    >
+                                        <option value="">None (Top Level)</option>
+                                        {categories
+                                            .filter(c => c._id !== editingCategory?._id)
+                                            .map(c => (
+                                                <option key={c._id} value={c._id}>{c.name}</option>
+                                            ))}
+                                    </select>
+                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                                        <ChevronDownIcon className="h-4 w-4" />
+                                    </div>
+                                </div>
                             </div>
 
-                            <div>
-                                <CustomInput
-                                    label="Description"
-                                    name="description"
-                                    value={formData.description || ''}
-                                    onChange={handleChange}
-                                    multiline
-                                    rows={3}
-                                    placeholder="Short description..."
-                                />
-                            </div>
-
-                            <div className="pt-2 flex gap-3">
-                                {isEditing && (
+                            <div className="pt-4 flex gap-3">
+                                {editingCategory && (
                                     <button
                                         type="button"
                                         onClick={handleCancel}
-                                        className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
-                                        disabled={isSaving}
+                                        className="flex-1 px-4 py-2 bg-white border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-all text-sm"
                                     >
                                         Cancel
                                     </button>
                                 )}
                                 <button
                                     type="submit"
-                                    className="flex-1 px-4 py-2 bg-lime-500 text-white rounded-lg hover:bg-lime-600 transition font-medium shadow-md shadow-green-200 disabled:opacity-70 disabled:cursor-not-allowed"
-                                    disabled={isSaving}
+                                    disabled={loading}
+                                    className="flex-1 px-4 py-2 bg-gray-900 text-white font-medium rounded-xl hover:bg-gray-800 transition-all shadow-lg shadow-gray-200 disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2 text-sm"
                                 >
-                                    {isSaving ? 'Saving...' : (isEditing ? 'Update' : 'Create')}
+                                    {loading ? (
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        <>
+                                            {editingCategory ? <CheckIcon className="w-5 h-5" /> : <PlusIcon className="w-5 h-5" />}
+                                            <span>{editingCategory ? 'Update' : 'Create'}</span>
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </form>

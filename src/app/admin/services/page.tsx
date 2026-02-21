@@ -285,55 +285,66 @@ export default function AdminServicesPage() {
     });
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-1000 lg:px-6 lg:pb-6">
-            <div className="flex justify-between items-end">
-                <PageHeader
-                    title="Services"
-                    description="Manage services with product recipes and pricing"
-                />
-                <Link
-                    href="/admin/services/new"
-                    className="flex items-center gap-2 px-4 py-2 bg-lime-500 text-white font-medium rounded-lg hover:bg-lime-600 hover:shadow-md hover:shadow-lime-200 transition"
-                >
-                    <PlusIcon className="w-5 h-5" />
-                    Create Service
-                </Link>
+        <div className="max-w-full mx-auto pb-12">
+            <div className="flex items-center gap-4 mb-8">
+                <div className="p-3 bg-white rounded-2xl shadow-sm border border-gray-100">
+                    <WrenchScrewdriverIcon className="w-6 h-6 text-lime-600" />
+                </div>
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Services Management</h1>
+                    <p className="text-sm text-gray-500 font-medium">Manage your service offerings, pricing, and resource allocation.</p>
+                </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-                <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-                    <h2 className="font-semibold text-gray-700 flex items-center gap-2">
-                        <WrenchScrewdriverIcon className="w-5 h-5" />
-                        Services List
-                    </h2>
-                    <div className="flex items-center gap-5">
-                        <input
-                            type='text'
-                            placeholder='Search'
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className='border-b border-transparent px-3 py-1 text-sm text-gray-500 hover:border-b-gray-200 hover:text-gray-900 focus:outline-none focus:border-lime-400 transition-all'
-                        />
+            <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
+                {/* Card Header */}
+                <div className="px-8 py-6 border-b border-gray-100 bg-gray-50/50 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h2 className="text-lg font-bold text-gray-900">
+                            Services List
+                        </h2>
+                        <p className="text-sm text-gray-500 mt-0.5">
+                            Catalog of available services and costs.
+                        </p>
+                    </div>
+
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                        <div className="relative flex-1 md:w-64">
+                            <input
+                                type='text'
+                                placeholder='Search services...'
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-4 pr-3 py-2 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-lime-500/20 focus:border-lime-500 transition-all shadow-sm"
+                            />
+                        </div>
+                        <Link
+                            href="/admin/services/new"
+                            className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-xl font-medium shadow-lg shadow-gray-200 hover:bg-gray-800 hover:-translate-y-0.5 transition-all text-sm whitespace-nowrap"
+                        >
+                            <PlusIcon className="w-4 h-4" />
+                            <span>Create Service</span>
+                        </Link>
                     </div>
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className="min-w-full text-left border-collapse">
-                        <thead className="bg-gray-50 text-xs uppercase text-gray-500 font-semibold">
+                    <table className="w-full text-left text-sm text-gray-600">
+                        <thead className="bg-gray-50/50 border-b border-gray-100 font-semibold text-gray-900">
                             <tr>
-                                <th className="px-6 py-3">Name</th>
-                                <th className="px-6 py-3 text-center">Price</th>
-                                <th className="px-6 py-3 text-center">Prime Cost</th>
-                                <th className="px-6 py-3 text-center">Profit</th>
-                                <th className="px-6 py-3 text-center">Status</th>
-                                <th className="px-6 py-3 text-center">Actions</th>
+                                <th className="px-8 py-4">Name</th>
+                                <th className="px-6 py-4 text-center">Price</th>
+                                <th className="px-6 py-4 text-center">Prime Cost</th>
+                                <th className="px-6 py-4 text-center">Profit</th>
+                                <th className="px-6 py-4 text-center">Status</th>
+                                <th className="px-6 py-4 text-center">Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="divide-y divide-gray-100">
                             {isLoading ? (
-                                <tr><td colSpan={6} className="p-6 text-center text-gray-500">Loading...</td></tr>
+                                <tr><td colSpan={6} className="px-8 py-12 text-center text-gray-500">Loading...</td></tr>
                             ) : filteredServices.length === 0 ? (
-                                <tr><td colSpan={6} className="p-6 text-center text-gray-500">No services found.</td></tr>
+                                <tr><td colSpan={6} className="px-8 py-12 text-center text-gray-500">No services found.</td></tr>
                             ) : (
                                 filteredServices.map((service: Service) => (
                                     <ServiceRow key={service._id} service={service} />

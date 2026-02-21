@@ -217,7 +217,9 @@ CREATE TABLE IF NOT EXISTS ticket_items (
   product_name TEXT NOT NULL,
   quantity INTEGER NOT NULL DEFAULT 1,
   unit_price NUMERIC(12, 2) NOT NULL,
-  crew_snapshot JSONB
+  commission NUMERIC(12, 2) DEFAULT 0,
+  crew_snapshot JSONB,
+  sort_order INTEGER DEFAULT 0
 );
 
 -- =============================================

@@ -47,37 +47,39 @@ export function CartPanel() {
     // RENDER
     // -------------------------------------------------------------------------
     return (
-        <div className={`h-full bg-transparent z-40 transition-all duration-500 ease-in-out flex pointer-events-none overflow-hidden py-4 pl-4 ${isCartOpen ? (sidebarView !== 'NONE' ? 'w-[1016px]' : 'w-[516px]') : 'w-0'}`}>
-            {/* Direct Panel - No wrapper/padding to ensure no "division" or gap is created */}
-            <div className={`h-full flex transition-all duration-500 ease-in-out transform pointer-events-auto ${isCartOpen ? 'translate-x-0' : 'translate-x-full'} bg-white border border-gray-200 rounded-l-2xl shadow-xl overflow-hidden`}>
-                {/* Main Cart Panel */}
-                <div className="flex flex-col h-full relative w-[500px] shrink-0 bg-white">
-                    <PaymentModal
-                        isOpen={isPaymentModalOpen}
-                        onClose={() => setIsPaymentModalOpen(false)}
-                        onConfirm={confirmCheckout}
-                    />
+        <>
+            <PaymentModal
+                isOpen={isPaymentModalOpen}
+                onClose={() => setIsPaymentModalOpen(false)}
+                onConfirm={confirmCheckout}
+            />
 
-                    <CartHeader
-                        ticketNameInput={ticketNameInput}
-                        setTicketNameInput={setTicketNameInput}
-                    />
+            <div className={`h-full bg-transparent z-40 transition-all duration-500 ease-in-out flex pointer-events-none overflow-hidden py-4 pl-4 ${isCartOpen ? (sidebarView !== 'NONE' ? 'w-[1016px]' : 'w-[516px]') : 'w-0'}`}>
+                {/* Direct Panel - No wrapper/padding to ensure no "division" or gap is created */}
+                <div className={`h-full flex transition-all duration-500 ease-in-out transform pointer-events-auto ${isCartOpen ? 'translate-x-0' : 'translate-x-full'} bg-white border border-gray-200 rounded-l-2xl shadow-xl overflow-hidden`}>
+                    {/* Main Cart Panel */}
+                    <div className="flex flex-col h-full relative w-[500px] shrink-0 bg-white">
+                        <CartHeader
+                            ticketNameInput={ticketNameInput}
+                            setTicketNameInput={setTicketNameInput}
+                        />
 
-                    <CartItemsList />
+                        <CartItemsList />
 
-                    <CartFooter
-                        onSave={handleSave}
-                        onCheckoutClick={handleCheckoutClick}
-                        isBusy={isProcessing}
-                    />
-                </div>
+                        <CartFooter
+                            onSave={handleSave}
+                            onCheckoutClick={handleCheckoutClick}
+                            isBusy={isProcessing}
+                        />
+                    </div>
 
-                {/* Right Sidebar - slides in from right */}
-                <div className={`bg-white border-l border-gray-200 h-full overflow-hidden transition-all duration-300 ${sidebarView !== 'NONE' ? 'w-[500px]' : 'w-0'
-                    }`}>
-                    <CartSidebar />
+                    {/* Right Sidebar - slides in from right */}
+                    <div className={`bg-white border-l border-gray-200 h-full overflow-hidden transition-all duration-300 ${sidebarView !== 'NONE' ? 'w-[500px]' : 'w-0'
+                        }`}>
+                        <CartSidebar />
+                    </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 }

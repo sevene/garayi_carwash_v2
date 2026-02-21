@@ -9,13 +9,15 @@ import {
     ArrowTrendingDownIcon,
     ArrowTrendingUpIcon,
     ShoppingBagIcon,
-    InformationCircleIcon
+    InformationCircleIcon,
+    ChartPieIcon
 } from '@heroicons/react/24/outline';
 
 import { useSettings } from '@/hooks/useSettings';
 import RevenueAreaChart from '@/components/ui/RevenueAreaChart';
-import { format, subDays, isWithinInterval, startOfDay, endOfDay, parseISO } from 'date-fns';
+import { format, subDays, isWithinInterval, startOfDay, endOfDay, parseISO, formatDistanceToNow } from 'date-fns';
 import { useQuery } from '@powersync/react';
+import Link from 'next/link';
 
 export default function OverviewPage() {
     const { formatCurrency } = useSettings();
@@ -24,13 +26,14 @@ export default function OverviewPage() {
 
     // Fetch data from PowerSync
     const { data: ticketsData = [], isLoading: ticketsLoading } = useQuery<any>(
-        `SELECT * FROM tickets WHERE status = 'COMPLETED' ORDER BY created_at DESC`
+        `SELECT * FROM tickets WHERE status = 'PAID' ORDER BY created_at DESC`
     );
     const { data: ticketItemsData = [] } = useQuery<any>('SELECT * FROM ticket_items');
     const { data: employeesData = [] } = useQuery<any>('SELECT * FROM employees');
     const { data: servicesData = [] } = useQuery<any>('SELECT * FROM services');
     const { data: productsData = [] } = useQuery<any>('SELECT * FROM products');
     const { data: expensesData = [] } = useQuery<any>('SELECT * FROM expenses');
+    const { data: customersData = [] } = useQuery<any>('SELECT * FROM customers');
 
     useEffect(() => { setIsMounted(true); }, []);
 
@@ -60,14 +63,45 @@ export default function OverviewPage() {
         const tickets = ticketsData.map((t: any) => {
             const items = ticketItemsData
                 .filter((ti: any) => ti.ticket_id === t.id)
-                .map((ti: any) => ({
-                    productId: ti.item_id,
-                    productName: ti.item_name || 'Unknown',
-                    quantity: ti.quantity || 1,
-                    unitPrice: Number(ti.unit_price) || 0,
-                    unitCost: Number(ti.unit_cost) || 0,
-                    commission: Number(ti.commission) || 0
-                }));
+                .map((ti: any) => {
+                    const price = Number(ti.unit_price) || 0;
+                    let computedCommission = 0;
+                    let crew = [];
+                    try { crew = ti.crew_snapshot ? JSON.parse(ti.crew_snapshot) : []; } catch { }
+
+                    if (crew.length > 0) {
+                        if (ti.commission != null) {
+                            computedCommission = Number(ti.commission);
+                        } else {
+                            const svc = servicesData.find((s: any) => s.id === ti.item_id || s.id === ti.product_id);
+                            if (svc && Number(svc.labor_cost) > 0) {
+                                computedCommission = svc.labor_cost_type === 'percentage'
+                                    ? (Number(svc.labor_cost) / 100) * price
+                                    : Number(svc.labor_cost);
+                            } else {
+                                crew.forEach((c: any) => {
+                                    const emp = employeesData.find((e: any) => e.id === c.id);
+                                    if (emp) {
+                                        const comp = typeof emp.compensation === 'string' ? JSON.parse(emp.compensation) : emp.compensation;
+                                        if (comp?.payType === 'commission' && Number(comp.commission) > 0) {
+                                            computedCommission += (Number(comp.commission) / 100) * price;
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    }
+
+                    return {
+                        productId: ti.item_id || ti.product_id,
+                        productName: ti.product_name || 'Unknown',
+                        quantity: Number(ti.quantity) || 1,
+                        unitPrice: price,
+                        unitCost: Number(ti.unit_cost) || 0,
+                        commission: computedCommission,
+                        crew
+                    };
+                });
             return {
                 _id: t.id,
                 status: t.status,
@@ -79,19 +113,19 @@ export default function OverviewPage() {
         });
 
         const filteredTickets = tickets.filter((t: any) => {
-            if (t.status !== 'COMPLETED') return false;
+            if (t.status !== 'PAID') return false;
             if (!currentInterval) return true;
             try {
-                return isWithinInterval(parseISO(t.createdAt), currentInterval);
+                return isWithinInterval(new Date(t.createdAt), currentInterval);
             } catch { return false; }
         });
 
         let previousRevenue = 0;
         if (previousInterval) {
             tickets.filter((t: any) => {
-                if (t.status !== 'COMPLETED') return false;
+                if (t.status !== 'PAID') return false;
                 try {
-                    return isWithinInterval(parseISO(t.createdAt), previousInterval!);
+                    return isWithinInterval(new Date(t.createdAt), previousInterval!);
                 } catch { return false; }
             }).forEach((ticket: any) => {
                 previousRevenue += ticket.total || ticket.items.reduce((sum: number, i: any) => sum + (i.unitPrice * i.quantity), 0);
@@ -103,13 +137,14 @@ export default function OverviewPage() {
         let totalLaborCost = 0;
         const chartDataMap: Record<string, number> = {};
         const itemStats: Record<string, { name: string, qty: number, revenue: number, profit: number, type: string }> = {};
+        const crewStatsMap: Record<string, { id: string, name: string, commission: number, jobs: number }> = {};
 
         filteredTickets.forEach((ticket: any) => {
             let ticketTotal = ticket.total || ticket.items.reduce((sum: number, i: any) => sum + (i.unitPrice * i.quantity), 0);
             totalRevenue += ticketTotal;
 
             try {
-                const dateKey = format(parseISO(ticket.createdAt), 'yyyy-MM-dd');
+                const dateKey = format(new Date(ticket.createdAt), 'yyyy-MM-dd');
                 chartDataMap[dateKey] = (chartDataMap[dateKey] || 0) + ticketTotal;
             } catch { }
 
@@ -129,13 +164,25 @@ export default function OverviewPage() {
                 itemStats[key].qty += itemQty;
                 itemStats[key].revenue += itemPrice * itemQty;
                 itemStats[key].profit += (itemPrice * itemQty) - itemTotalCost;
+
+                if (item.crew && item.crew.length > 0) {
+                    const splitCommission = (itemCommission * itemQty) / item.crew.length;
+                    item.crew.forEach((c: any) => {
+                        const crewId = c.id;
+                        if (!crewStatsMap[crewId]) {
+                            crewStatsMap[crewId] = { id: crewId, name: c.name || 'Unknown', commission: 0, jobs: 0 };
+                        }
+                        crewStatsMap[crewId].commission += splitCommission;
+                        crewStatsMap[crewId].jobs += itemQty;
+                    });
+                }
             });
         });
 
         const filteredExpenses = expensesData.filter((e: any) => {
             if (!currentInterval) return true;
             try {
-                return isWithinInterval(parseISO(e.date), currentInterval);
+                return isWithinInterval(new Date(e.date), currentInterval);
             } catch { return false; }
         });
 
@@ -154,9 +201,22 @@ export default function OverviewPage() {
         const uniqueCustomerIds = new Set(filteredTickets.map((t: any) => t.customer).filter(Boolean));
 
         const chartData = Object.keys(chartDataMap).sort().map(key => ({
-            name: format(parseISO(key), 'MMM dd'),
+            name: format(new Date(key), 'MMM dd'),
             revenue: chartDataMap[key]
         }));
+
+        const recentTransactions = [...filteredTickets]
+            .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .slice(0, 6)
+            .map((t: any) => {
+                const customer = customersData.find((c: any) => c.id === t.customer);
+                return {
+                    id: t._id,
+                    customerName: customer ? customer.name : 'Walk-in',
+                    total: t.total,
+                    timeAgo: formatDistanceToNow(new Date(t.createdAt), { addSuffix: true })
+                };
+            });
 
         return {
             totalRevenue,
@@ -168,11 +228,12 @@ export default function OverviewPage() {
             totalLaborCost,
             totalExpenses,
             totalCustomers: uniqueCustomerIds.size,
-            crewStats: [],
+            crewStats: Object.values(crewStatsMap).sort((a, b) => b.commission - a.commission),
             itemStats: Object.values(itemStats).sort((a, b) => b.revenue - a.revenue),
+            recentTransactions,
             chartData
         };
-    }, [ticketsData, ticketItemsData, employeesData, servicesData, productsData, expensesData, dateRange]);
+    }, [ticketsData, ticketItemsData, employeesData, servicesData, productsData, expensesData, customersData, dateRange]);
 
     const getTrendLabel = () => {
         if (dateRange === 'all') return 'total';
@@ -184,51 +245,59 @@ export default function OverviewPage() {
     };
 
     return (
-        <div className="relative min-h-screen w-full overflow-hidden text-gray-800">
-            <div className="relative z-10 space-y-8 animate-in fade-in duration-1000 lg:px-6 lg:pb-6">
-                <div className="flex flex-col md:flex-row justify-between items-end gap-6 pb-2">
-                    <PageHeader title="Overview" description="Detailed breakdown of sales, profits, and expenses." />
-                    <div className="bg-white p-1.5 rounded-2xl shadow-sm flex text-sm font-bold gap-1">
-                        {(['today', 'week', 'month', 'year', 'all'] as const).map((range) => (
-                            <button
-                                key={range}
-                                onClick={() => setDateRange(range)}
-                                className={`px-6 py-2.5 rounded-xl transition-all duration-300 ${dateRange === range ? 'bg-blue-800 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'}`}
-                            >
-                                {range.charAt(0).toUpperCase() + range.slice(1)}
-                            </button>
-                        ))}
+        <div className="w-full pb-8">
+            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 mb-8">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 bg-white rounded-2xl shadow-sm border border-gray-100">
+                        <ChartPieIcon className="w-6 h-6 text-lime-600" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Overview</h1>
+                        <p className="text-sm text-gray-500 font-medium">Detailed breakdown of sales, profits, and expenses.</p>
                     </div>
                 </div>
+                <div className="bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 flex text-sm font-medium gap-1 overflow-x-auto w-full xl:w-auto">
+                    {(['today', 'week', 'month', 'year', 'all'] as const).map((range) => (
+                        <button
+                            key={range}
+                            onClick={() => setDateRange(range)}
+                            className={`px-4 py-2 rounded-xl transition-all duration-300 whitespace-nowrap ${dateRange === range ? 'bg-gray-900 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'}`}
+                        >
+                            {range.charAt(0).toUpperCase() + range.slice(1)}
+                        </button>
+                    ))}
+                </div>
+            </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <SummaryCard title="Net Revenue" value={formatCurrency(dashboardData.totalRevenue)} icon={CurrencyDollarIcon} desc={getTrendLabel()} trend={dateRange !== 'all' ? dashboardData.revenueTrend : undefined} variant="primary" helperText="Total revenue from all completed orders." />
+            <div className="relative z-10 space-y-4 animate-in fade-in duration-1000">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <SummaryCard title="Net Revenue" value={formatCurrency(dashboardData.totalRevenue)} icon={CurrencyDollarIcon} desc={getTrendLabel()} trend={dateRange !== 'all' ? dashboardData.revenueTrend : undefined} variant="primary" helperText="Total revenue from all paid orders." />
                     <SummaryCard title="Gross Profit" value={formatCurrency(dashboardData.grossProfit)} icon={ChartBarIcon} desc={`${dashboardData.grossMargin.toFixed(1)}% margin`} helperText="Revenue minus cost of items." />
                     <SummaryCard title="Total Commissions" value={formatCurrency(dashboardData.totalLaborCost)} icon={UserGroupIcon} desc="Crew payouts" helperText="Accumulated commissions for crew members." />
-                    <SummaryCard title="Total Orders" value={dashboardData.totalOrders.toString()} icon={ShoppingBagIcon} desc={`${dashboardData.totalCustomers} Customers`} helperText="Total completed orders and unique customers." />
+                    <SummaryCard title="Total Orders" value={dashboardData.totalOrders.toString()} icon={ShoppingBagIcon} desc={`${dashboardData.totalCustomers} Customers`} helperText="Total paid orders and unique customers." />
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 bg-white p-8 rounded-3xl shadow-md relative overflow-hidden">
-                        <div className="relative z-10">
-                            <div className="flex justify-between items-center mb-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                    <div className="lg:col-span-2 bg-gray-50 rounded-3xl shadow-sm border border-white p-6 relative overflow-hidden">
+                        <div className="relative z-10 flex flex-col h-full">
+                            <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-xl font-bold text-gray-900">Revenue Trend</h3>
                                 <div className="flex items-center gap-2 text-sm text-gray-600 font-medium">
                                     <span className="w-2 h-2 rounded-full bg-lime-500"></span>
                                     <span>Sales Volume</span>
                                 </div>
                             </div>
-                            <div className="h-96 w-full">
+                            <div className="h-64 w-full">
                                 <RevenueAreaChart data={dashboardData.chartData} />
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white p-8 rounded-3xl shadow-md flex flex-col relative overflow-hidden">
+                    <div className="bg-gray-50 p-6 rounded-3xl shadow-sm border border-white flex flex-col relative overflow-hidden">
                         <div className="relative z-10 flex flex-col h-full">
-                            <h3 className="text-xl font-bold text-gray-900 mb-8">Top Performance</h3>
-                            <div className="flex-1 overflow-y-auto space-y-6 pr-2">
-                                {dashboardData.itemStats.slice(0, 6).map((item, idx) => {
+                            <h3 className="text-xl font-bold text-gray-900 mb-6">Top Performance</h3>
+                            <div className="flex-1 overflow-y-auto space-y-5 pr-2 scrollbar-hide">
+                                {dashboardData.itemStats.slice(0, 5).map((item, idx) => {
                                     const margin = item.revenue > 0 ? (item.profit / item.revenue) * 100 : 0;
                                     return (
                                         <div key={idx} className="group">
@@ -247,6 +316,68 @@ export default function OverviewPage() {
                                     );
                                 })}
                                 {dashboardData.itemStats.length === 0 && <p className="text-center text-gray-500 mt-10">No performance data</p>}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    <div className="bg-gray-50 p-6 rounded-3xl shadow-sm border border-white flex flex-col relative overflow-hidden h-58">
+                        <div className="relative z-10 flex flex-col h-full">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-bold text-gray-900">Crew Commissions</h3>
+                                <Link href="/admin/dashboard/reports" className="text-[13px] font-bold text-lime-600 hover:text-lime-700 transition-colors">
+                                    View Crew Performance &rarr;
+                                </Link>
+                            </div>
+                            <div className="flex-1 overflow-y-auto space-y-4 pr-2 hover-scrollbar">
+                                {dashboardData.crewStats.map((crew, idx) => {
+                                    const maxComm = dashboardData.crewStats[0]?.commission || 1;
+                                    const width = (crew.commission / maxComm) * 100;
+                                    return (
+                                        <div key={idx} className="group">
+                                            <div className="flex justify-between items-end mb-1.5">
+                                                <p className="font-bold text-gray-800 text-[13px] truncate">{crew.name}</p>
+                                                <p className="font-bold text-gray-900 text-[13px]">{formatCurrency(crew.commission)}</p>
+                                            </div>
+                                            <div className="relative h-1.5 bg-gray-100 rounded-full overflow-hidden border border-gray-200">
+                                                <div className="absolute top-0 left-0 h-full bg-lime-500 rounded-full transition-all duration-1000" style={{ width: `${Math.max(2, width)}%` }} />
+                                            </div>
+                                            <div className="flex justify-between mt-1 text-[11px] text-gray-500 font-medium">
+                                                <span>{crew.jobs} items serviced</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                {dashboardData.crewStats.length === 0 && <p className="text-center text-gray-500 mt-10">No crew data found</p>}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-gray-50 p-6 rounded-3xl shadow-sm border border-white flex flex-col relative overflow-hidden h-58">
+                        <div className="relative z-10 flex flex-col h-full">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-bold text-gray-900">Recent Transactions</h3>
+                                <Link href="/admin/dashboard/reports" className="text-[13px] font-bold text-lime-600 hover:text-lime-700 transition-colors">
+                                    View Sales Summary &rarr;
+                                </Link>
+                            </div>
+                            <div className="flex-1 overflow-y-auto space-y-4 pr-2 hover-scrollbar">
+                                {dashboardData.recentTransactions.map((tx, idx) => (
+                                    <div key={idx} className="flex items-center justify-between pb-3 border-b border-gray-50 last:border-0 last:pb-0">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-slate-50 text-slate-600 flex items-center justify-center font-bold shadow-sm border border-slate-100 text-xs">
+                                                {tx.customerName.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-gray-900 text-[13px]">{tx.customerName}</p>
+                                                <p className="text-[11px] text-gray-500 font-medium capitalize mt-0.5">{tx.timeAgo}</p>
+                                            </div>
+                                        </div>
+                                        <p className="font-bold text-gray-900 text-[13px]">{formatCurrency(tx.total)}</p>
+                                    </div>
+                                ))}
+                                {dashboardData.recentTransactions.length === 0 && <p className="text-center text-gray-500 mt-10">No recent transactions</p>}
                             </div>
                         </div>
                     </div>
@@ -270,7 +401,7 @@ function SummaryCard({ title, value, icon: Icon, desc, variant = 'default', tren
     const isPrimary = variant === 'primary';
     const containerClasses = isPrimary
         ? "bg-gradient-to-br from-lime-500 to-green-600 text-white border border-lime-500 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:scale-[1.02]"
-        : "bg-neutral-50 border-2 border-white shadow-sm hover:shadow-lg hover:-translate-y-1 hover:scale-[1.02] text-gray-900";
+        : "bg-neutral-50 border border-white shadow-sm hover:shadow-lg hover:-translate-y-1 hover:scale-[1.02] text-gray-900";
     const iconBoxClasses = isPrimary ? "bg-white/20 text-white border-white/10" : "bg-gray-50 text-gray-500 border-gray-100 group-hover:text-lime-600";
     const titleClasses = isPrimary ? "text-lime-100" : "text-gray-500";
     const valueClasses = isPrimary ? "text-white drop-shadow-sm" : "text-gray-900";
@@ -279,7 +410,7 @@ function SummaryCard({ title, value, icon: Icon, desc, variant = 'default', tren
     const trendColor = trend !== undefined ? (trend >= 0 ? (isPrimary ? 'text-white' : 'text-lime-600') : (isPrimary ? 'text-white' : 'text-red-500')) : '';
 
     return (
-        <div className={`p-4 rounded-3xl transition-all duration-300 group relative overflow-visible ${containerClasses}`}>
+        <div className={`p-5 rounded-3xl transition-all duration-300 group relative overflow-hidden ${containerClasses}`}>
             {isPrimary && <div className="absolute top-0 right-0 p-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none"></div>}
             {helperText && (
                 <div className="absolute top-4 right-4 z-20 flex flex-col items-end group/tooltip">
@@ -294,20 +425,29 @@ function SummaryCard({ title, value, icon: Icon, desc, variant = 'default', tren
             )}
             {TrendIcon && (
                 <div className={`absolute -top-16 -right-3 pointer-events-none opacity-15 group-hover:scale-110 transition-all duration-500 ease-in-out ${isPrimary ? 'text-white' : (trend! >= 0 ? 'text-lime-500' : 'text-red-500')}`}>
-                    <TrendIcon className="w-72 h-72" />
+                    <TrendIcon className="w-56 h-56" />
                 </div>
             )}
             <div className="relative z-10 flex flex-col h-full justify-between">
                 <div>
                     <div className="flex items-center gap-4 mb-4">
-                        <div className={`p-3 rounded-2xl shadow-sm border transition-colors duration-300 ${iconBoxClasses}`}>
-                            <Icon className="w-6 h-6" />
+                        <div className={`p-2.5 rounded-xl shadow-sm border transition-colors duration-300 ${iconBoxClasses}`}>
+                            <Icon className="w-5 h-5" />
                         </div>
                         <p className={`text-xs font-bold uppercase tracking-wider ${titleClasses}`}>{title}</p>
                     </div>
                 </div>
                 <div>
-                    <p className={`text-3xl font-bold tracking-tight ${valueClasses}`}>{value}</p>
+                    <p className={`text-3xl font-bold tracking-tight ${valueClasses}`}>
+                        {isNaN(Number(value.charAt(0))) ? (
+                            <>
+                                <span className="text-xl mr-0.5 opacity-80 font-medium">{value.charAt(0)}</span>
+                                {value.slice(1)}
+                            </>
+                        ) : (
+                            value
+                        )}
+                    </p>
                     <div className="flex items-center gap-2 mt-2">
                         {trend !== undefined && (
                             <div className={`flex items-center gap-1 text-sm font-bold ${trendColor}`}>

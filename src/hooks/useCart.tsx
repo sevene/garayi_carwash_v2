@@ -67,6 +67,8 @@ const useCartState = () => {
         `SELECT * FROM employees WHERE status = 'active' ORDER BY name`
     );
     const { data: settingsData = [] } = useQuery<any>('SELECT * FROM settings LIMIT 1');
+    const { data: servicesData = [] } = useQuery<any>('SELECT * FROM services');
+    const { data: variantsData = [] } = useQuery<any>('SELECT * FROM service_variants');
 
     // --- Effects ---
     useEffect(() => {
@@ -91,6 +93,7 @@ const useCartState = () => {
                     productName: item.product_name || 'Unknown Item',
                     quantity: item.quantity || 1,
                     unitPrice: Number(item.unit_price) || 0,
+                    commission: Number(item.commission) || 0,
                     _id: item.id,
                     itemType: item.item_type,
                     crew: item.crew_snapshot ? JSON.parse(item.crew_snapshot) : []
@@ -279,7 +282,7 @@ const useCartState = () => {
         try {
             const ticketId = currentTicketId || uuidv4();
             const now = new Date().toISOString();
-            const items = prepareTicketItemsForDb(cartItems, itemCrew, employees, ticketId);
+            const items = prepareTicketItemsForDb(cartItems, itemCrew, employees, servicesData, variantsData, ticketId);
 
             await db.writeTransaction(async (tx: any) => {
                 let ticketNumber = null;
@@ -304,15 +307,19 @@ const useCartState = () => {
 
                 for (const item of items) {
                     await tx.execute(
-                        `INSERT INTO ticket_items (id, ticket_id, product_id, item_id, item_type, product_name, quantity, unit_price, crew_snapshot, sort_order)
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                        [item.id, item.ticket_id, item.product_id, item.item_id, item.item_type, item.product_name, item.quantity, item.unit_price, item.crew_snapshot, item.sort_order || 0]
+                        `INSERT INTO ticket_items (id, ticket_id, product_id, item_id, item_type, product_name, quantity, unit_price, commission, crew_snapshot, sort_order)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                        [item.id, item.ticket_id, item.product_id, item.item_id, item.item_type, item.product_name, item.quantity, item.unit_price, item.commission, item.crew_snapshot, item.sort_order || 0]
                     );
                 }
             });
 
             showToast.success(!currentTicketId ? 'Ticket Created' : 'Ticket Updated', {
-                description: `Ticket "${nameToSave}" has been saved successfully.`,
+                description: (
+                    <span>
+                        Ticket <span className="font-bold text-gray-600">{nameToSave}</span> has been saved successfully.
+                    </span>
+                ),
                 duration: 5000,
             });
             clearCart();
@@ -352,7 +359,7 @@ const useCartState = () => {
         try {
             const ticketId = currentTicketId || uuidv4();
             const now = new Date().toISOString();
-            const items = prepareTicketItemsForDb(cartItems, itemCrew, employees, ticketId);
+            const items = prepareTicketItemsForDb(cartItems, itemCrew, employees, servicesData, variantsData, ticketId);
 
             await db.writeTransaction(async (tx: any) => {
                 let ticketNumber = null;
@@ -377,9 +384,9 @@ const useCartState = () => {
 
                 for (const item of items) {
                     await tx.execute(
-                        `INSERT INTO ticket_items (id, ticket_id, product_id, item_id, item_type, product_name, quantity, unit_price, crew_snapshot)
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                        [item.id, item.ticket_id, item.product_id, item.item_id, item.item_type, item.product_name, item.quantity, item.unit_price, item.crew_snapshot]
+                        `INSERT INTO ticket_items (id, ticket_id, product_id, item_id, item_type, product_name, quantity, unit_price, commission, crew_snapshot, sort_order)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                        [item.id, item.ticket_id, item.product_id, item.item_id, item.item_type, item.product_name, item.quantity, item.unit_price, item.commission, item.crew_snapshot, item.sort_order || 0]
                     );
                 }
             });

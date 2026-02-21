@@ -6,7 +6,9 @@ import {
     PrinterIcon,
     UserGroupIcon,
     ShoppingBagIcon,
-    CurrencyDollarIcon
+    CurrencyDollarIcon,
+    DocumentChartBarIcon,
+    ChartBarIcon
 } from '@heroicons/react/24/outline';
 import { useSettings } from '@/hooks/useSettings';
 import { format, subDays, isWithinInterval, startOfDay, endOfDay, parseISO, startOfMonth, endOfMonth, startOfYear, endOfYear, isValid } from 'date-fns';
@@ -15,6 +17,20 @@ import { useQuery } from '@powersync/react';
 export default function ReportsPage() {
     const { formatCurrency } = useSettings();
 
+    const renderCurrency = (value: string) => {
+        if (!value) return value;
+        const match = value.match(/^([^0-9.-]+)(.*)$/);
+        if (match) {
+            return (
+                <>
+                    <span className="text-[0.7em] mr-0.5 opacity-70 font-medium">{match[1]}</span>
+                    <span>{match[2]}</span>
+                </>
+            );
+        }
+        return value;
+    };
+
     const [activeTab, setActiveTab] = useState<'SALES' | 'CREW' | 'ITEMS'>('SALES');
     const [dateRange, setDateRange] = useState({
         start: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
@@ -22,7 +38,7 @@ export default function ReportsPage() {
     });
 
     // Fetch data from PowerSync
-    const { data: ticketsData = [], isLoading } = useQuery<any>('SELECT * FROM tickets WHERE status = ?', ['COMPLETED']);
+    const { data: ticketsData = [], isLoading } = useQuery<any>('SELECT * FROM tickets WHERE status = ?', ['PAID']);
     const { data: ticketItemsData = [] } = useQuery<any>('SELECT * FROM ticket_items');
     const { data: employeesData = [] } = useQuery<any>('SELECT * FROM employees');
     const { data: servicesData = [] } = useQuery<any>('SELECT * FROM services');
@@ -37,14 +53,45 @@ export default function ReportsPage() {
         const tickets = ticketsData.map((t: any) => {
             const items = ticketItemsData
                 .filter((ti: any) => ti.ticket_id === t.id)
-                .map((ti: any) => ({
-                    productId: ti.item_id,
-                    productName: ti.item_name || 'Unknown',
-                    quantity: Number(ti.quantity) || 0,
-                    unitPrice: Number(ti.unit_price) || 0,
-                    unitCost: Number(ti.unit_cost) || 0,
-                    commission: Number(ti.commission) || 0
-                }));
+                .map((ti: any) => {
+                    const price = Number(ti.unit_price) || 0;
+                    let computedCommission = 0;
+                    let crew = [];
+                    try { crew = ti.crew_snapshot ? JSON.parse(ti.crew_snapshot) : []; } catch { }
+
+                    if (crew.length > 0) {
+                        if (ti.commission != null) {
+                            computedCommission = Number(ti.commission);
+                        } else {
+                            const svc = servicesData.find((s: any) => s.id === ti.item_id || s.id === ti.product_id);
+                            if (svc && Number(svc.labor_cost) > 0) {
+                                computedCommission = svc.labor_cost_type === 'percentage'
+                                    ? (Number(svc.labor_cost) / 100) * price
+                                    : Number(svc.labor_cost);
+                            } else {
+                                crew.forEach((c: any) => {
+                                    const emp = employeesData.find((e: any) => e.id === c.id);
+                                    if (emp) {
+                                        const comp = typeof emp.compensation === 'string' ? JSON.parse(emp.compensation) : emp.compensation;
+                                        if (comp?.payType === 'commission' && Number(comp.commission) > 0) {
+                                            computedCommission += (Number(comp.commission) / 100) * price;
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    }
+
+                    return {
+                        productId: ti.item_id || ti.product_id,
+                        productName: ti.product_name || 'Unknown',
+                        quantity: Number(ti.quantity) || 1,
+                        unitPrice: price,
+                        unitCost: Number(ti.unit_cost) || 0,
+                        commission: computedCommission,
+                        crew
+                    };
+                });
             return {
                 _id: t.id,
                 status: t.status,
@@ -56,9 +103,9 @@ export default function ReportsPage() {
 
         // Filter tickets by date
         const filteredTickets = tickets.filter((t: any) => {
-            if (t.status !== 'COMPLETED') return false;
+            if (t.status !== 'PAID') return false;
             try {
-                return isWithinInterval(parseISO(t.createdAt), interval);
+                return isWithinInterval(new Date(t.createdAt), interval);
             } catch { return false; }
         });
 
@@ -74,7 +121,7 @@ export default function ReportsPage() {
 
         filteredTickets.forEach((t: any) => {
             let dateKey = '';
-            try { dateKey = format(parseISO(t.createdAt), 'yyyy-MM-dd'); } catch { }
+            try { dateKey = format(new Date(t.createdAt), 'yyyy-MM-dd'); } catch { }
             const total = t.total || 0;
 
             if (dateKey && !salesStats[dateKey]) {
@@ -85,6 +132,7 @@ export default function ReportsPage() {
                 salesStats[dateKey].count += 1;
             }
 
+            const ticketCrewIds = new Set<string>();
             t.items.forEach((item: any) => {
                 const qty = item.quantity || 0;
                 const price = item.unitPrice || 0;
@@ -92,6 +140,17 @@ export default function ReportsPage() {
                 const unitCost = item.unitCost || 0;
                 const commission = item.commission || 0;
                 const totalCost = (unitCost + commission) * qty;
+
+                // Accumulate crew split
+                if (item.crew && Array.isArray(item.crew) && item.crew.length > 0) {
+                    const crewCount = item.crew.length;
+                    item.crew.forEach((c: any) => {
+                        ticketCrewIds.add(c.id);
+                        if (!crewStats[c.id]) crewStats[c.id] = { name: c.name, tickets: 0, sales: 0, commission: 0 };
+                        crewStats[c.id].sales += (rev / crewCount);
+                        crewStats[c.id].commission += (commission * qty) / crewCount;
+                    });
+                }
 
                 const key = item.productId || item.productName;
                 if (!itemStats[key]) {
@@ -102,6 +161,10 @@ export default function ReportsPage() {
                 itemStats[key].revenue += rev;
                 itemStats[key].cost += totalCost;
                 itemStats[key].profit += (rev - totalCost);
+            });
+
+            ticketCrewIds.forEach(id => {
+                if (crewStats[id]) crewStats[id].tickets += 1;
             });
         });
 
@@ -123,23 +186,37 @@ export default function ReportsPage() {
     };
 
     return (
-        <div className="relative h-full w-full overflow-hidden text-gray-800 animate-in fade-in duration-700 lg:px-6 lg:pb-6">
-            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-6 mb-8">
-                <PageHeader title="Reports Center" description="Detailed analysis of sales, staff performance, and product margins." />
-                <div className="flex flex-col md:flex-row items-end gap-4 bg-white p-2 rounded-2xl shadow-sm border border-gray-100 w-full xl:w-auto">
-                    <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-xl w-full md:w-auto">
-                        <input type="date" className="bg-transparent border-none text-sm font-bold text-gray-700 focus:ring-0 p-2" value={dateRange.start} onChange={e => setDateRange(prev => ({ ...prev, start: e.target.value }))} />
-                        <span className="text-gray-400">-</span>
-                        <input type="date" className="bg-transparent border-none text-sm font-bold text-gray-700 focus:ring-0 p-2" value={dateRange.end} onChange={e => setDateRange(prev => ({ ...prev, end: e.target.value }))} />
+        <div className="w-full pb-12">
+            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 mb-8">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 bg-white rounded-2xl shadow-sm border border-gray-100">
+                        <ChartBarIcon className="w-6 h-6 text-lime-600" />
                     </div>
-                    <div className="flex gap-1 bg-gray-50 p-1.5 rounded-xl">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Reports Center</h1>
+                        <p className="text-sm text-gray-500 font-medium">Detailed analysis of sales, staff performance, and product margins.</p>
+                    </div>
+                </div>
+
+                <div className="flex flex-col md:flex-row items-center gap-3 w-full xl:w-auto">
+                    <div className="flex items-center bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 w-full md:w-auto">
+                        <div className="flex items-center gap-2 pl-3 pr-2 border-r border-gray-100 h-[36px]">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Period</span>
+                        </div>
+                        <input type="date" className="bg-transparent border-none text-sm font-medium text-gray-600 focus:ring-0 px-2 py-2 w-[130px] cursor-pointer" value={dateRange.start} onChange={e => setDateRange(prev => ({ ...prev, start: e.target.value }))} />
+                        <span className="text-gray-300">-</span>
+                        <input type="date" className="bg-transparent border-none text-sm font-medium text-gray-600 focus:ring-0 px-2 py-2 w-[130px] cursor-pointer" value={dateRange.end} onChange={e => setDateRange(prev => ({ ...prev, end: e.target.value }))} />
+                    </div>
+
+                    <div className="flex items-center gap-1 bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 text-sm font-medium w-full md:w-auto overflow-x-auto">
                         {(['today', 'week', 'month', 'year'] as const).map(t => (
-                            <button key={t} onClick={() => setQuickDate(t)} className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-gray-500 hover:bg-white hover:shadow-sm rounded-lg transition-all">{t}</button>
+                            <button key={t} onClick={() => setQuickDate(t)} className="px-4 py-2 uppercase tracking-wider text-gray-600 hover:bg-gray-100 rounded-xl transition-all whitespace-nowrap">{t}</button>
                         ))}
+                        <div className="w-px h-4 bg-gray-200 mx-1"></div>
+                        <button onClick={() => window.print()} className="p-2 text-gray-500 hover:text-gray-900 rounded-xl hover:bg-gray-100 transition-colors" title="Print Report">
+                            <PrinterIcon className="w-5 h-5" />
+                        </button>
                     </div>
-                    <button onClick={() => window.print()} className="p-3 text-gray-500 hover:text-gray-900 bg-gray-50 hover:bg-lime-50 rounded-xl transition-colors">
-                        <PrinterIcon className="w-5 h-5" />
-                    </button>
                 </div>
             </div>
 
@@ -149,15 +226,15 @@ export default function ReportsPage() {
                 <TabButton active={activeTab === 'ITEMS'} onClick={() => setActiveTab('ITEMS')} icon={ShoppingBagIcon} label="Products & Services" />
             </div>
 
-            <div className="bg-gray-50 rounded-3xl shadow-sm border border-white overflow-hidden min-h-[500px]">
-                <div className="bg-gray-50 border-b border-gray-200 p-6 flex justify-between items-center">
+            <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden min-h-[500px]">
+                <div className="bg-white border-b border-gray-100 px-8 py-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
-                        <h3 className="text-lg font-bold text-gray-900">{activeTab === 'SALES' ? 'Sales Report' : activeTab === 'CREW' ? 'Staff Commission Report' : 'Item Profitability Report'}</h3>
-                        <p className="text-sm text-gray-500">{isValid(parseISO(dateRange.start)) ? format(parseISO(dateRange.start), 'MMM dd, yyyy') : 'Invalid'} - {isValid(parseISO(dateRange.end)) ? format(parseISO(dateRange.end), 'MMM dd, yyyy') : 'Invalid'}</p>
+                        <h3 className="text-lg font-bold text-gray-900 tracking-tight">{activeTab === 'SALES' ? 'Sales Report' : activeTab === 'CREW' ? 'Staff Commission Report' : 'Item Profitability Report'}</h3>
+                        <p className="text-sm text-gray-500 mt-0.5 font-medium">{isValid(new Date(dateRange.start)) ? format(new Date(dateRange.start), 'MMM dd, yyyy') : 'Invalid'} - {isValid(new Date(dateRange.end)) ? format(new Date(dateRange.end), 'MMM dd, yyyy') : 'Invalid'}</p>
                     </div>
-                    <div className="text-right">
-                        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Total Revenue</p>
-                        <p className="text-2xl font-black text-gray-900">{formatCurrency(reportData.totalRevenue)}</p>
+                    <div className="text-left md:text-right">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Revenue</p>
+                        <p className="text-2xl font-black text-lime-600">{renderCurrency(formatCurrency(reportData.totalRevenue))}</p>
                     </div>
                 </div>
 
@@ -168,17 +245,17 @@ export default function ReportsPage() {
                         <table className="w-full text-left text-sm whitespace-nowrap">
                             {activeTab === 'SALES' && (
                                 <>
-                                    <thead className="bg-gray-50 text-gray-500 font-bold text-xs uppercase tracking-wider border-b border-gray-100">
-                                        <tr><th className="px-8 py-5">Date</th><th className="px-8 py-5 text-center">Orders</th><th className="px-8 py-5 text-center">Customers</th><th className="px-8 py-5 text-right">Avg. Ticket</th><th className="px-8 py-5 text-right">Revenue</th></tr>
+                                    <thead className="bg-gray-50/50 border-b border-gray-100 font-semibold text-gray-900">
+                                        <tr><th className="px-8 py-4">Date</th><th className="px-8 py-4 text-center">Orders</th><th className="px-8 py-4 text-center">Customers</th><th className="px-8 py-4 text-right">Avg. Ticket</th><th className="px-8 py-4 text-right">Revenue</th></tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-50">
                                         {reportData.salesArray.map((row) => (
                                             <tr key={row.date} className="hover:bg-gray-50 transition-colors">
-                                                <td className="px-8 py-4 font-bold text-gray-800">{format(parseISO(row.date), 'MMM dd, yyyy')}</td>
+                                                <td className="px-8 py-4 font-bold text-gray-800">{format(new Date(row.date), 'MMM dd, yyyy')}</td>
                                                 <td className="px-8 py-4 text-center text-gray-600">{row.count}</td>
                                                 <td className="px-8 py-4 text-center text-gray-600">{row.customers.size}</td>
-                                                <td className="px-8 py-4 text-right text-gray-600">{formatCurrency(row.count > 0 ? row.revenue / row.count : 0)}</td>
-                                                <td className="px-8 py-4 text-right font-bold text-lime-700">{formatCurrency(row.revenue)}</td>
+                                                <td className="px-8 py-4 text-right text-gray-600">{renderCurrency(formatCurrency(row.count > 0 ? row.revenue / row.count : 0))}</td>
+                                                <td className="px-8 py-4 text-right font-bold text-lime-700">{renderCurrency(formatCurrency(row.revenue))}</td>
                                             </tr>
                                         ))}
                                         {reportData.salesArray.length === 0 && <tr><td colSpan={5} className="px-8 py-10 text-center text-gray-400">No sales in this period</td></tr>}
@@ -187,16 +264,16 @@ export default function ReportsPage() {
                             )}
                             {activeTab === 'CREW' && (
                                 <>
-                                    <thead className="bg-gray-50 text-gray-500 font-bold text-xs uppercase tracking-wider border-b border-gray-100">
-                                        <tr><th className="px-8 py-5">Staff Member</th><th className="px-8 py-5 text-center">Tickets</th><th className="px-8 py-5 text-right">Sales Volume</th><th className="px-8 py-5 text-right text-lime-700">Commission</th></tr>
+                                    <thead className="bg-gray-50/50 border-b border-gray-100 font-semibold text-gray-900">
+                                        <tr><th className="px-8 py-4">Staff Member</th><th className="px-8 py-4 text-center">Tickets</th><th className="px-8 py-4 text-right">Sales Volume</th><th className="px-8 py-4 text-right">Commission</th></tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-50">
                                         {reportData.crewArray.map((row) => (
                                             <tr key={row.name} className="hover:bg-gray-50 transition-colors">
                                                 <td className="px-8 py-4 font-bold text-gray-800">{row.name}</td>
                                                 <td className="px-8 py-4 text-center text-gray-600">{row.tickets}</td>
-                                                <td className="px-8 py-4 text-right text-gray-600">{formatCurrency(row.sales)}</td>
-                                                <td className="px-8 py-4 text-right font-bold text-lime-700 text-lg">{formatCurrency(row.commission)}</td>
+                                                <td className="px-8 py-4 text-right text-gray-600">{renderCurrency(formatCurrency(row.sales))}</td>
+                                                <td className="px-8 py-4 text-right font-bold text-lime-700 text-lg">{renderCurrency(formatCurrency(row.commission))}</td>
                                             </tr>
                                         ))}
                                         {reportData.crewArray.length === 0 && <tr><td colSpan={4} className="px-8 py-10 text-center text-gray-400">No active staff</td></tr>}
@@ -205,8 +282,8 @@ export default function ReportsPage() {
                             )}
                             {activeTab === 'ITEMS' && (
                                 <>
-                                    <thead className="bg-gray-50 text-gray-500 font-bold text-xs uppercase tracking-wider border-b border-gray-100">
-                                        <tr><th className="px-8 py-5">Item</th><th className="px-8 py-5">Type</th><th className="px-8 py-5 text-center">Qty</th><th className="px-8 py-5 text-right">Revenue</th><th className="px-8 py-5 text-right">Cost</th><th className="px-8 py-5 text-right text-lime-700">Profit</th><th className="px-8 py-5 text-right">Margin</th></tr>
+                                    <thead className="bg-gray-50/50 border-b border-gray-100 font-semibold text-gray-900">
+                                        <tr><th className="px-8 py-4">Item</th><th className="px-8 py-4">Type</th><th className="px-8 py-4 text-center">Qty</th><th className="px-8 py-4 text-right">Revenue</th><th className="px-8 py-4 text-right">Cost</th><th className="px-8 py-4 text-right text-lime-700">Profit</th><th className="px-8 py-4 text-right">Margin</th></tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-50">
                                         {reportData.itemArray.map((row, idx) => {
@@ -216,9 +293,9 @@ export default function ReportsPage() {
                                                     <td className="px-8 py-4 font-bold text-gray-800">{row.name}</td>
                                                     <td className="px-8 py-4 text-xs font-bold uppercase text-gray-400">{row.type}</td>
                                                     <td className="px-8 py-4 text-center text-gray-600">{row.qty}</td>
-                                                    <td className="px-8 py-4 text-right text-gray-600">{formatCurrency(row.revenue)}</td>
-                                                    <td className="px-8 py-4 text-right text-red-400">{formatCurrency(row.cost)}</td>
-                                                    <td className="px-8 py-4 text-right font-bold text-lime-700">{formatCurrency(row.profit)}</td>
+                                                    <td className="px-8 py-4 text-right text-gray-600">{renderCurrency(formatCurrency(row.revenue))}</td>
+                                                    <td className="px-8 py-4 text-right text-red-400">{renderCurrency(formatCurrency(row.cost))}</td>
+                                                    <td className="px-8 py-4 text-right font-bold text-lime-700">{renderCurrency(formatCurrency(row.profit))}</td>
                                                     <td className="px-8 py-4 text-right text-gray-500 text-xs font-bold">{margin.toFixed(1)}%</td>
                                                 </tr>
                                             );
@@ -239,7 +316,7 @@ function TabButton({ active, onClick, icon: Icon, label }: { active: boolean, on
     return (
         <button
             onClick={onClick}
-            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all duration-300 border ${active ? 'bg-gray-900 text-white border-gray-900 shadow-md' : 'bg-white text-gray-500 border-white hover:bg-gray-50 hover:text-gray-900'}`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all duration-300 border ${active ? 'bg-gray-900 text-white border-gray-900 shadow-md' : 'bg-white text-gray-500 border-white hover:bg-gray-50 hover:text-gray-900'}`}
         >
             <Icon className={`w-5 h-5 ${active ? 'text-lime-400' : 'text-gray-400'}`} />
             {label}

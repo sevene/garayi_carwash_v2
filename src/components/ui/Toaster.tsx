@@ -8,7 +8,7 @@ import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 const ToastCard = ({ type, title, description, duration = 4000, onDismiss }: {
     type: 'success' | 'error' | 'warning' | 'info',
     title: string,
-    description?: string,
+    description?: React.ReactNode,
     duration?: number,
     onDismiss?: () => void
 }) => {
@@ -72,19 +72,19 @@ const ToastCard = ({ type, title, description, duration = 4000, onDismiss }: {
 
 // Wrapper to simplify usage
 export const showToast = {
-    success: (title: string, options?: { description?: string, duration?: number }) => {
+    success: (title: string, options?: { description?: React.ReactNode, duration?: number }) => {
         const duration = options?.duration || 4000;
         toast.custom((id) => <ToastCard type="success" title={title} description={options?.description} duration={duration} onDismiss={() => toast.dismiss(id)} />, { duration });
     },
-    error: (title: string, options?: { description?: string, duration?: number }) => {
+    error: (title: string, options?: { description?: React.ReactNode, duration?: number }) => {
         const duration = options?.duration || 4000;
         toast.custom((id) => <ToastCard type="error" title={title} description={options?.description} duration={duration} onDismiss={() => toast.dismiss(id)} />, { duration });
     },
-    warning: (title: string, options?: { description?: string, duration?: number }) => {
+    warning: (title: string, options?: { description?: React.ReactNode, duration?: number }) => {
         const duration = options?.duration || 4000;
         toast.custom((id) => <ToastCard type="warning" title={title} description={options?.description} duration={duration} onDismiss={() => toast.dismiss(id)} />, { duration });
     },
-    info: (title: string, options?: { description?: string, duration?: number }) => {
+    info: (title: string, options?: { description?: React.ReactNode, duration?: number }) => {
         const duration = options?.duration || 4000;
         toast.custom((id) => <ToastCard type="info" title={title} description={options?.description} duration={duration} onDismiss={() => toast.dismiss(id)} />, { duration });
     },

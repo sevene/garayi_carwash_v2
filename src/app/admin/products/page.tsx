@@ -5,15 +5,18 @@ import Image from 'next/image';
 import {
     PlusIcon,
     MagnifyingGlassIcon,
-    PencilSquareIcon,
+    PencilIcon,
     TrashIcon,
-    PhotoIcon
+    PhotoIcon,
+    CubeIcon,
+    ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { Product } from '@/lib/products';
 import { useSettings } from '@/hooks/useSettings';
 import { toast } from 'sonner';
 import PageHeader from '@/components/admin/PageHeader';
+import CustomSelect from '@/components/ui/CustomSelect';
 import { useQuery, usePowerSync } from '@powersync/react';
 
 export default function AdminProductsPage() {
@@ -21,6 +24,7 @@ export default function AdminProductsPage() {
     const { formatCurrency, settings } = useSettings();
     const currencySymbol = settings?.currency === 'USD' ? '$' : settings?.currency === 'EUR' ? '€' : '₱';
     const [searchQuery, setSearchQuery] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState('ALL');
 
     // Fetch products from PowerSync with Inventory JOIN
     const { data: productsData = [], isLoading } = useQuery<any>(
@@ -56,7 +60,7 @@ export default function AdminProductsPage() {
     // Map categories
     const categories = useMemo(() => {
         return categoriesData.map((c: any) => ({
-            _id: c.id,
+            id: c.id,
             name: c.name
         }));
     }, [categoriesData]);
@@ -91,7 +95,7 @@ export default function AdminProductsPage() {
         }
     };
 
-    const handleTogglePos = async (product: Product) => {
+    const handleTogglePos = async (product: any) => {
         if (!db) return;
 
         const newStatus = !product.showInPOS;
@@ -108,58 +112,71 @@ export default function AdminProductsPage() {
         }
     };
 
-    const filteredProducts = products.filter((product: Product) =>
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.sku?.toLowerCase().includes(searchQuery.toLowerCase())
+    const filteredProducts = products.filter((product: any) =>
+        (categoryFilter === 'ALL' || product.category?._id === categoryFilter) &&
+        (product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            product.sku?.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-1000 lg:px-6 lg:pb-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <PageHeader
-                    title="Products"
-                    description="Manage your inventory and pricing"
-                />
-                <Link
-                    href="/admin/products/new"
-                    className="flex items-center gap-2 bg-lime-500 text-white px-4 py-2 rounded-lg hover:bg-lime-600 transition hover:shadow-md hover:shadow-lime-200"
-                >
-                    <PlusIcon className="w-5 h-5" />
-                    <span>Add Product</span>
-                </Link>
-            </div>
-
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col sm:flex-row gap-4">
-                <div className="relative flex-1">
-                    <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                        type="text"
-                        name="searchProducts"
-                        placeholder="Search by name or SKU..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-                    />
+        <div className="max-w-full mx-auto pb-12">
+            <div className="flex items-center gap-4 mb-8">
+                <div className="p-3 bg-white rounded-2xl shadow-sm border border-gray-100">
+                    <CubeIcon className="w-6 h-6 text-lime-600" />
                 </div>
-                <select name="filterCategory" className="border border-gray-300 rounded-lg px-4 py-2 text-gray-700 focus:ring-2 focus:ring-green-500 outline-none bg-white">
-                    <option value="all">All Categories</option>
-                    {categories.map((cat: any) => (
-                        <option key={cat._id} value={cat.name}>{cat.name}</option>
-                    ))}
-                </select>
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Products Management</h1>
+                    <p className="text-sm text-gray-500 font-medium">Manage your product catalog, prices, and visibility.</p>
+                </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-3xl shadow-[0_2px_20px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
+                {/* Toolbar */}
+                <div className="px-8 py-6 border-b border-gray-100 bg-gray-50/50 flex flex-col xl:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h2 className="text-lg font-bold text-gray-900">
+                            Products Directory
+                        </h2>
+                        <p className="text-sm text-gray-500 mt-0.5">
+                            Full list of products and their attributes.
+                        </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+                        <div className="relative flex-1 min-w-[200px]">
+                            <input
+                                type='text'
+                                placeholder='Search products...'
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-4 pr-3 py-2 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-lime-500/20 focus:border-lime-500 transition-all shadow-sm"
+                            />
+                        </div>
+                        <div className="w-48">
+                            <CustomSelect
+                                options={[{ label: 'All Categories', value: 'ALL' }, ...categories.map(c => ({ label: c.name, value: c.id }))]}
+                                value={categoryFilter}
+                                onChange={(val) => setCategoryFilter(val as string)}
+                                placeholder="Filter Category"
+                            />
+                        </div>
+                        <Link
+                            href="/admin/products/new"
+                            className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-xl font-medium shadow-lg shadow-gray-200 hover:bg-gray-800 hover:-translate-y-0.5 transition-all text-sm whitespace-nowrap"
+                        >
+                            <PlusIcon className="w-4 h-4" />
+                            <span>Add Product</span>
+                        </Link>
+                    </div>
+                </div>
+
                 <div className="overflow-x-auto">
                     <table className="min-w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-gray-50 border-b border-gray-200 text-xs uppercase text-gray-500 font-semibold tracking-wider">
-                                <th className="px-6 py-4">Name</th>
-                                <th className="px-6 py-4 text-center">SKU</th>
+                        <thead className="bg-gray-50/50 border-b border-gray-100 font-semibold text-gray-900">
+                            <tr>
+                                <th className="px-8 py-4">Product</th>
                                 <th className="px-6 py-4 text-center">Category</th>
-                                <th className="px-6 py-4 text-center">Volume</th>
                                 <th className="px-6 py-4 text-center">Price</th>
-                                <th className="px-6 py-4 text-center">Cost</th>
                                 <th className="px-6 py-4 text-center">Stock</th>
                                 <th className="px-6 py-4 text-center">Show in POS</th>
                                 <th className="px-6 py-4 text-center">Actions</th>
@@ -167,94 +184,61 @@ export default function AdminProductsPage() {
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {isLoading ? (
-                                <tr>
-                                    <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
-                                        Loading inventory...
-                                    </td>
-                                </tr>
+                                <tr><td colSpan={6} className="px-8 py-12 text-center text-gray-500">Loading products...</td></tr>
                             ) : filteredProducts.length === 0 ? (
-                                <tr>
-                                    <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
-                                        No products found matching your criteria.
-                                    </td>
-                                </tr>
+                                <tr><td colSpan={6} className="px-8 py-12 text-center text-gray-500">No products found.</td></tr>
                             ) : (
                                 filteredProducts.map((product: Product) => (
-                                    <tr key={product._id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 overflow-hidden shrink-0">
+                                    <tr key={product._id} className="hover:bg-gray-50/80 transition-colors group">
+                                        <td className="px-8 py-4">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center overflow-hidden shrink-0 border border-gray-200">
                                                     {product.image ? (
-                                                        <Image
-                                                            src={product.image}
-                                                            alt={product.name}
-                                                            width={40}
-                                                            height={40}
-                                                            className="w-full h-full object-cover"
-                                                        />
+                                                        <Image src={product.image} alt={product.name} width={48} height={48} className="object-cover w-full h-full" />
                                                     ) : (
-                                                        <PhotoIcon className="w-5 h-5" />
+                                                        <PhotoIcon className="w-6 h-6 text-gray-300" />
                                                     )}
                                                 </div>
-                                                <span className="font-medium text-gray-900">{product.name}</span>
+                                                <div>
+                                                    <div className="font-bold text-gray-900 group-hover:text-lime-700 transition-colors">{product.name}</div>
+                                                    <div className="text-[10px] text-gray-400 font-mono mt-0.5">SKU: {product.sku || 'N/A'}</div>
+                                                </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-center text-gray-500 font-mono">
-                                            {product.sku || '—'}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-center text-gray-600">
-                                            <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-medium">
-                                                {typeof product.category === 'object' && product.category !== null
+                                        <td className="px-6 py-4 text-center">
+                                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+                                                {typeof product.category === 'object' && product.category
                                                     ? (product.category as any).name
-                                                    : product.category || 'Uncategorized'}
+                                                    : 'Uncategorized'}
                                             </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-center text-gray-500">
-                                            {product.volume || '—'}
                                         </td>
                                         <td className="px-6 py-4 text-center font-medium text-gray-900">
                                             {formatCurrency(Number(product.price))}
                                         </td>
-                                        <td className="px-6 py-4 text-center font-medium text-gray-900">
-                                            {currencySymbol}{Number(product.cost).toFixed(4)}
-                                        </td>
                                         <td className="px-6 py-4 text-center">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                            ${(product.stock || 0) > 10
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : (product.stock || 0) > 0
-                                                        ? 'bg-yellow-100 text-yellow-800'
-                                                        : 'bg-red-100 text-red-800'}`}>
+                                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${(product.stock || 0) > 10 ? 'bg-green-50 text-green-700 border-green-100' : (product.stock || 0) > 0 ? 'bg-yellow-50 text-yellow-700 border-yellow-100' : 'bg-red-50 text-red-700 border-red-100'}`}>
                                                 {product.stock || 0} in stock
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <div className="flex justify-center">
-                                                <div className="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
-                                                    <input
-                                                        type="checkbox"
-                                                        name={`toggle-${product._id}`}
-                                                        id={`toggle-${product._id}`}
-                                                        checked={product.showInPOS !== false}
-                                                        onChange={() => handleTogglePos(product)}
-                                                        className="toggle-checkbox absolute block w-3 h-3 rounded-full bg-white border appearance-none cursor-pointer transition-transform duration-200 ease-in-out checked:translate-x-full checked:border-lime-500"
-                                                        style={{ top: '2px', left: '2px' }}
-                                                    />
-                                                    <label
-                                                        htmlFor={`toggle-${product._id}`}
-                                                        className={`toggle-label block overflow-hidden w-7 h-4 rounded-full cursor-pointer transition-colors duration-200 ${product.showInPOS !== false ? 'bg-lime-500' : 'bg-gray-300'}`}
-                                                    ></label>
-                                                </div>
-                                            </div>
+                                            <button
+                                                onClick={() => handleTogglePos(product)}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-2 ${product.showInPOS ? 'bg-lime-500' : 'bg-gray-200'}`}
+                                            >
+                                                <span
+                                                    className={`${product.showInPOS ? 'translate-x-6' : 'translate-x-1'
+                                                        } inline-block h-4 w-4 transform rounded-full bg-white transition`}
+                                                />
+                                            </button>
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <div className="flex justify-center gap-2">
+                                            <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <Link
                                                     href={`/admin/products/edit?id=${product._id}`}
                                                     className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full transition"
                                                     title="Edit Product"
                                                 >
-                                                    <PencilSquareIcon className="w-5 h-5" />
+                                                    <PencilIcon className="w-5 h-5" />
                                                 </Link>
                                                 <button
                                                     onClick={() => handleDelete(product._id, product.name)}

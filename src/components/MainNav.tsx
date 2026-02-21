@@ -45,7 +45,18 @@ export function MainNav() {
             } else {
                 params.delete('q');
             }
-            replace(`${pathname}?${params.toString()}`);
+
+            if (isAdmin) {
+                if (term) {
+                    replace(`/admin/search?${params.toString()}`);
+                } else if (pathname === '/admin/search') {
+                    // If they clear the search bar while ON the search page, just update the URL
+                    replace(`/admin/search?${params.toString()}`);
+                }
+                // If they clear the search bar while on another page, do nothing vs clearing local state
+            } else {
+                replace(`${pathname}?${params.toString()}`);
+            }
         }, 300);
     };
 
@@ -82,15 +93,21 @@ export function MainNav() {
                 <div className="hidden md:flex flex-1 justify-center px-4 max-w-xl">
                     <div className="relative w-full group">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 group-focus-within:text-slate-600 transition-colors" strokeWidth={2.5} />
+                            <MagnifyingGlassIcon
+                                className={`h-5 w-5 text-gray-400 transition-colors ${isAdmin ? 'group-focus-within:text-lime-600' : 'group-focus-within:text-blue-600'}`}
+                                strokeWidth={2.5}
+                            />
                         </div>
                         <input
                             type="text"
-                            name="posSearch"
+                            name={isPOS ? "posSearch" : "adminSearch"}
                             defaultValue={searchParams.get('q')?.toString()}
                             onChange={(e) => handleSearch(e.target.value)}
-                            className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl leading-5 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:border-2 focus:border-slate-600 transition-all sm:text-sm"
-                            placeholder="Search products, services, or SKU..."
+                            className={`block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl leading-5 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:border-2 transition-all sm:text-sm ${isAdmin
+                                ? 'focus:border-lime-600 focus:ring-2 focus:ring-lime-600/20'
+                                : 'focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20'
+                                }`}
+                            placeholder={isPOS ? "Search products, services, or SKU..." : "Search dashboard, records, or settings..."}
                         />
                     </div>
                 </div>

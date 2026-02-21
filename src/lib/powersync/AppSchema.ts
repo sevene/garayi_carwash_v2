@@ -5,7 +5,7 @@ import { column, Schema, Table, TableV2 } from '@powersync/web';
 // =============================================
 const settings = new Table({
     name: column.text,
-    address_street: column.text,
+    address: column.text,
     currency: column.text,
     tax_rate: column.real,
     enable_notifications: column.integer, // 0 or 1 for boolean
@@ -227,6 +227,7 @@ const ticket_items = new Table({
     product_name: column.text,
     quantity: column.integer,
     unit_price: column.real,
+    commission: column.real,
     crew_snapshot: column.text, // JSON string
     sort_order: column.integer
 }, { indexes: { ticket: ['ticket_id'] } });

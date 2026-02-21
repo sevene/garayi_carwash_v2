@@ -7,7 +7,6 @@ export type {
     CategoryRecord,
     ProductRecord,
     ServiceRecord,
-    ServiceIngredientRecord,
     ServiceVariantRecord,
     CustomerRecord,
     CustomerVehicleRecord,

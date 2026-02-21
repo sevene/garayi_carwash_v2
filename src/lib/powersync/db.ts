@@ -29,7 +29,7 @@ export function getPowerSync(): PowerSyncDatabase {
     const db = new PowerSyncDatabase({
         schema: AppSchema,
         database: {
-            dbFilename: 'garayi-pos.db'
+            dbFilename: 'garayi-pos-v2.db'
         },
         flags: {
             enableMultiTabs: true

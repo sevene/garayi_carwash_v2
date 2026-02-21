@@ -68,7 +68,7 @@ export default function AdminSideBar() {
 
     return (
         <aside
-            className={`${isCollapsed ? 'w-20' : 'w-64'} bg-gray-50 shadow-lg rounded-3xl text-gray-700 flex flex-col shrink-0 transition-all duration-300 z-20 overflow-hidden relative border-2 border-white`}
+            className={`${isCollapsed ? 'w-20' : 'w-64'} bg-gray-50 shadow-lg rounded-xl text-gray-700 flex flex-col shrink-0 transition-all duration-300 z-20 overflow-hidden relative border-2 border-white`}
         >
             <div className={`p-4 border-b border-gray-200 h-14 bg-gray-50 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
                 <div className={`overflow-hidden transition-all duration-300 flex items-center ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
@@ -78,7 +78,7 @@ export default function AdminSideBar() {
                 </div>
                 <button
                     onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="p-1.5 rounded-lg hover:text-lime-500 text-gray-500 transition-all duration-300"
+                    className="p-1.5 rounded-lg hover:text-gray-900 text-gray-500 transition-all duration-300"
                 >
                     {isCollapsed ? (
                         <Bars3Icon className="w-6 h-6 shrink-0" />
@@ -104,8 +104,8 @@ export default function AdminSideBar() {
                                     <div
                                         className={`group relative flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-3 py-2.5 rounded-xl text-sm duration-300 transition-all cursor-pointer select-none border border-transparent
                                         ${isActiveParent
-                                                ? 'bg-gray-100 text-gray-900 font-medium'
-                                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                                ? 'bg-gray-200 text-gray-900 font-medium'
+                                                : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'
                                             }`}
                                         title={isCollapsed ? item.name : ''}
                                     >
@@ -119,7 +119,7 @@ export default function AdminSideBar() {
                                             className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 flex-1 ml-2'}`}
                                             onClick={() => toggleMenu(item.name)}
                                         >
-                                            <item.icon className={`w-6 h-6 shrink-0 ${isActiveParent ? 'text-lime-700' : 'text-gray-500 group-hover:text-lime-600'}`} />
+                                            <item.icon className={`w-6 h-6 shrink-0 ${isActiveParent ? 'text-gray-900' : 'text-gray-500 group-hover:text-gray-900'}`} />
                                             <div className={`flex-1 overflow-hidden transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
                                                 <span className="flex-1 font-medium z-10 outline-none truncate block">
                                                     {item.name}
@@ -159,12 +159,12 @@ export default function AdminSideBar() {
                                                         href={child.href}
                                                         className={`relative flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg transition-all duration-200 group/child
                                                         ${isChildActive
-                                                                ? 'text-lime-800 bg-lime-50 font-medium'
-                                                                : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+                                                                ? 'text-white bg-gray-900 font-medium'
+                                                                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200'
                                                             }`}
                                                     >
                                                         {/* Simple dot indicator instead of icon */}
-                                                        <div className={`w-1.5 h-1.5 rounded-full transition-colors ${isChildActive ? 'bg-lime-500' : 'bg-gray-300 group-hover/child:bg-gray-400'}`} />
+                                                        <div className={`w-1.5 h-1.5 rounded-full transition-colors ${isChildActive ? 'bg-white' : 'bg-gray-300 group-hover/child:bg-gray-400'}`} />
                                                         <span className="truncate">{child.name}</span>
                                                     </Link>
                                                 );
@@ -178,11 +178,11 @@ export default function AdminSideBar() {
                                     title={isCollapsed ? item.name : ''}
                                     className={`group relative flex items-center ${isCollapsed ? 'justify-center' : 'justify-start gap-3'} px-3 py-2.5 rounded-xl text-sm duration-300 transition-all border border-transparent
                                     ${pathname === item.href
-                                            ? 'bg-gray-100 text-gray-900 font-medium'
-                                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                                            ? 'bg-gray-900 text-white font-medium shadow-md'
+                                            : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'
                                         }`}
                                 >
-                                    <item.icon className={`w-6 h-6 shrink-0 ${!isCollapsed && 'ml-2'} ${pathname === item.href ? 'text-lime-700' : 'text-gray-500 group-hover:text-lime-600'}`} />
+                                    <item.icon className={`w-6 h-6 shrink-0 ${!isCollapsed && 'ml-2'} ${pathname === item.href ? 'text-white' : 'text-gray-500 group-hover:text-gray-900'}`} />
                                     <div className={`flex-1 overflow-hidden transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
                                         <span className="font-medium truncate block">{item.name}</span>
                                     </div>
