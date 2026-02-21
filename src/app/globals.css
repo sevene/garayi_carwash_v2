@@ -16,3 +16,14 @@ body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Custom Hover Scrollbar */
+.hover-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease;
+}
+
+.hover-scrollbar:hover {
+  scrollbar-color: #d1d5db transparent;
+}
