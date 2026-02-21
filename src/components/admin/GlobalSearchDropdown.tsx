@@ -67,7 +67,10 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
     if (!q) return null;
 
     return (
-        <div className="absolute top-full left-0 right-0 mt-3 max-h-[70vh] overflow-y-auto hover-scrollbar rounded-2xl border border-white/60 shadow-2xl bg-white/10 backdrop-blur-lg backdrop-saturate-50 z-100 p-3 flex flex-col gap-3">
+        <div
+            onMouseDown={(e) => e.preventDefault()}
+            className="absolute top-full left-0 right-0 mt-3 max-h-[70vh] overflow-y-auto hover-scrollbar rounded-2xl border border-white/60 shadow-2xl bg-white/10 backdrop-blur-lg backdrop-saturate-50 z-100 p-3 flex flex-col gap-3"
+        >
             {isLoading && (
                 <div className="p-6 flex flex-col items-center justify-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mb-3"></div>
