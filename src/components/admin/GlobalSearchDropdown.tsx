@@ -8,19 +8,100 @@ import { useSettings } from '@/hooks/useSettings';
 import { NAV_ITEMS } from './AdminSideBar';
 
 // Keywords map: searchable terms for each page's fields & elements
-const PAGE_KEYWORDS: Record<string, string[]> = {
-    '/admin/dashboard/overview': ['total sales', 'tickets today', 'revenue', 'commissions', 'crew performance', 'recent transactions'],
-    '/admin/dashboard/sales': ['sales breakdown', 'daily sales', 'monthly sales', 'revenue chart'],
-    '/admin/dashboard/expenses': ['expenses', 'costs', 'spending', 'expense tracking'],
-    '/admin/dashboard/reports': ['reports', 'analytics', 'export', 'summary'],
-    '/admin/categories': ['category', 'subcategory', 'product categories', 'group'],
-    '/admin/products': ['product name', 'sku', 'price', 'cost', 'barcode', 'stock', 'pos visibility', 'add product'],
-    '/admin/inventory': ['inventory', 'stock level', 'quantity', 'restock', 'stock count', 'low stock'],
-    '/admin/services': ['service name', 'base price', 'service variant', 'variant', 'recipe', 'description'],
-    '/admin/orders': ['order', 'ticket', 'status', 'paid', 'pending', 'walk-in', 'checkout', 'order history'],
-    '/admin/customers': ['customer name', 'email', 'phone', 'loyalty', 'customer history', 'crm'],
-    '/admin/people': ['employee', 'staff', 'role', 'shift', 'commission rate', 'hire date', 'position'],
-    '/admin/settings': ['store name', 'store address', 'currency', 'tax rate', 'receipt header', 'receipt footer', 'printer', 'theme', 'notifications', 'system alerts'],
+// Each keyword has a section (tab name) and a properly capitalized label
+type PageKeyword = { section: string; label: string };
+const PAGE_KEYWORDS: Record<string, PageKeyword[]> = {
+    '/admin/dashboard/overview': [
+        { section: 'Overview', label: 'Total Sales' },
+        { section: 'Overview', label: 'Tickets Today' },
+        { section: 'Overview', label: 'Revenue' },
+        { section: 'Overview', label: 'Commissions' },
+        { section: 'Overview', label: 'Crew Performance' },
+        { section: 'Overview', label: 'Recent Transactions' },
+    ],
+    '/admin/dashboard/sales': [
+        { section: 'Sales', label: 'Sales Breakdown' },
+        { section: 'Sales', label: 'Daily Sales' },
+        { section: 'Sales', label: 'Monthly Sales' },
+        { section: 'Sales', label: 'Revenue Chart' },
+    ],
+    '/admin/dashboard/expenses': [
+        { section: 'Expenses', label: 'Expense Tracking' },
+        { section: 'Expenses', label: 'Costs' },
+        { section: 'Expenses', label: 'Spending' },
+    ],
+    '/admin/dashboard/reports': [
+        { section: 'Reports', label: 'Analytics' },
+        { section: 'Reports', label: 'Export' },
+        { section: 'Reports', label: 'Summary' },
+    ],
+    '/admin/categories': [
+        { section: 'Categories', label: 'Category Name' },
+        { section: 'Categories', label: 'Subcategory' },
+        { section: 'Categories', label: 'Product Groups' },
+    ],
+    '/admin/products': [
+        { section: 'Products', label: 'Product Name' },
+        { section: 'Products', label: 'SKU' },
+        { section: 'Products', label: 'Price' },
+        { section: 'Products', label: 'Cost' },
+        { section: 'Products', label: 'Barcode' },
+        { section: 'Products', label: 'Stock' },
+        { section: 'Products', label: 'POS Visibility' },
+        { section: 'Products', label: 'Add Product' },
+    ],
+    '/admin/inventory': [
+        { section: 'Inventory', label: 'Stock Level' },
+        { section: 'Inventory', label: 'Quantity' },
+        { section: 'Inventory', label: 'Restock' },
+        { section: 'Inventory', label: 'Stock Count' },
+        { section: 'Inventory', label: 'Low Stock' },
+    ],
+    '/admin/services': [
+        { section: 'Services', label: 'Service Name' },
+        { section: 'Services', label: 'Base Price' },
+        { section: 'Services', label: 'Service Variant' },
+        { section: 'Services', label: 'Recipe' },
+        { section: 'Services', label: 'Description' },
+    ],
+    '/admin/orders': [
+        { section: 'Orders', label: 'Order History' },
+        { section: 'Orders', label: 'Ticket' },
+        { section: 'Orders', label: 'Status' },
+        { section: 'Orders', label: 'Paid' },
+        { section: 'Orders', label: 'Pending' },
+        { section: 'Orders', label: 'Walk-in' },
+        { section: 'Orders', label: 'Checkout' },
+    ],
+    '/admin/customers': [
+        { section: 'Customers', label: 'Customer Name' },
+        { section: 'Customers', label: 'Email' },
+        { section: 'Customers', label: 'Phone' },
+        { section: 'Customers', label: 'Loyalty' },
+        { section: 'Customers', label: 'Customer History' },
+        { section: 'Customers', label: 'CRM' },
+    ],
+    '/admin/people': [
+        { section: 'People', label: 'Employee Name' },
+        { section: 'People', label: 'Staff' },
+        { section: 'People', label: 'Role' },
+        { section: 'People', label: 'Shift' },
+        { section: 'People', label: 'Commission Rate' },
+        { section: 'People', label: 'Hire Date' },
+        { section: 'People', label: 'Position' },
+    ],
+    '/admin/settings': [
+        { section: 'General', label: 'Store Name' },
+        { section: 'General', label: 'Store Address' },
+        { section: 'General', label: 'Theme Preference' },
+        { section: 'Financial', label: 'Currency' },
+        { section: 'Financial', label: 'Tax Rate' },
+        { section: 'Receipt & Printing', label: 'Default Printer' },
+        { section: 'Receipt & Printing', label: 'Receipt Header' },
+        { section: 'Receipt & Printing', label: 'Receipt Footer' },
+        { section: 'Notifications', label: 'System Alerts' },
+        { section: 'Notifications', label: 'Enable Notifications' },
+    ],
 };
 
 // Flatten nav items (including children like Dashboard > Overview) into a searchable list
@@ -79,13 +160,13 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
             .map(page => {
                 const titleMatch = page.title.toLowerCase().includes(q);
                 const pathMatch = page.path.toLowerCase().includes(q);
-                const matchedKeyword = page.keywords.find(kw => kw.toLowerCase().includes(q));
+                const matchedKeyword = page.keywords.find(kw => kw.label.toLowerCase().includes(q));
                 if (titleMatch || pathMatch || matchedKeyword) {
                     return { ...page, matchedKeyword: matchedKeyword || null };
                 }
                 return null;
             })
-            .filter(Boolean) as (typeof ADMIN_PAGES[number] & { matchedKeyword: string | null })[];
+            .filter(Boolean) as (typeof ADMIN_PAGES[number] & { matchedKeyword: PageKeyword | null })[];
     }, [q]);
 
     const totalResults = matchedProducts.length + matchedServices.length + matchedCustomers.length + matchedEmployees.length + matchedTickets.length + matchedPages.length;
@@ -124,9 +205,9 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
                                     <Link onClick={onClose} href={page.path} key={`page-${idx}`} className="flex items-center justify-between px-4 py-3 bg-white/30 hover:bg-gray-900 rounded-xl transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] group/item">
                                         <div>
                                             <p className="font-bold text-gray-900 group-hover/item:text-white text-sm transition">{page.title}</p>
-                                            <p className="text-[10px] text-gray-500 group-hover/item:text-gray-300 font-mono mt-0.5 transition">
+                                            <p className="text-[10px] text-gray-500 group-hover/item:text-gray-300 mt-0.5 transition">
                                                 {page.matchedKeyword
-                                                    ? `Contains: ${page.matchedKeyword}`
+                                                    ? <><span className="font-semibold">{page.matchedKeyword.section}</span>: {page.matchedKeyword.label}</>
                                                     : page.path
                                                 }
                                             </p>
