@@ -3,18 +3,21 @@
 import React, { useMemo } from 'react';
 import { useQuery } from '@powersync/react';
 import Link from 'next/link';
-import { CubeIcon, SparklesIcon, UserGroupIcon, UsersIcon, TicketIcon, ArrowTopRightOnSquareIcon, WindowIcon } from '@heroicons/react/24/outline';
+import { CubeIcon, SparklesIcon, UserGroupIcon, UsersIcon, TicketIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 import { useSettings } from '@/hooks/useSettings';
+import { NAV_ITEMS } from './AdminSideBar';
 
-const ADMIN_PAGES = [
-    { title: 'Dashboard Overview', desc: 'Main sales and tickets dashboard', path: '/admin/dashboard/overview' },
-    { title: 'Products Dashboard', desc: 'Manage carwash products & inventory', path: '/admin/products' },
-    { title: 'Services Area', desc: 'Manage base services & variants', path: '/admin/services' },
-    { title: 'Customers Page', desc: 'CRM, loyalty points, & history', path: '/admin/customers' },
-    { title: 'People & Staff', desc: 'Manage employee shifts & roles', path: '/admin/people' },
-    { title: 'All Orders', desc: 'View current and past ticket histories', path: '/admin/orders' },
-    { title: 'Business Settings', desc: 'Configure company receipts & taxes', path: '/admin/settings' },
-];
+// Flatten nav items (including children like Dashboard > Overview) into a searchable list
+const ADMIN_PAGES = NAV_ITEMS.flatMap(item => {
+    if (item.children && item.children.length > 0) {
+        return item.children.map(child => ({
+            title: `${item.name} › ${child.name}`,
+            path: child.href,
+        }));
+    }
+    if (item.href === '#') return [];
+    return [{ title: item.name, path: item.href }];
+});
 
 export default function GlobalSearchDropdown({ query, onClose }: { query: string, onClose: () => void }) {
     const { formatCurrency } = useSettings();
@@ -55,7 +58,7 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
 
     const matchedPages = useMemo(() => {
         if (!q) return [];
-        return ADMIN_PAGES.filter(page => page.title.toLowerCase().includes(q) || page.desc.toLowerCase().includes(q));
+        return ADMIN_PAGES.filter(page => page.title.toLowerCase().includes(q) || page.path.toLowerCase().includes(q));
     }, [q]);
 
     const totalResults = matchedProducts.length + matchedServices.length + matchedCustomers.length + matchedEmployees.length + matchedTickets.length + matchedPages.length;
@@ -84,14 +87,14 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
                     {matchedPages.length > 0 && (
                         <div>
                             <div className="px-3 py-1.5 text-xs font-extrabold text-gray-500 uppercase tracking-widest flex items-center gap-2 mb-1">
-                                <WindowIcon className="w-4 h-4 text-gray-400" /> Pages & Navigation
+                                <ArrowTopRightOnSquareIcon className="w-4 h-4 text-gray-400" /> Pages & Navigation
                             </div>
                             <div className="space-y-1">
                                 {matchedPages.map((page, idx) => (
                                     <Link onClick={onClose} href={page.path} key={`page-${idx}`} className="flex items-center justify-between px-4 py-3 bg-white/30 hover:bg-gray-900 rounded-xl transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] group/item">
                                         <div>
                                             <p className="font-bold text-gray-900 group-hover/item:text-white text-sm transition">{page.title}</p>
-                                            <p className="text-[10px] text-gray-500 group-hover/item:text-gray-300 font-mono mt-0.5 transition">{page.desc}</p>
+                                            <p className="text-[10px] text-gray-500 group-hover/item:text-gray-300 font-mono mt-0.5 transition">{page.path}</p>
                                         </div>
                                         <div className="text-right">
                                             <ArrowTopRightOnSquareIcon className="w-4 h-4 text-gray-400 group-hover/item:text-white transition" />

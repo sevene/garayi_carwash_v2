@@ -16,7 +16,7 @@ import {
     SparklesIcon
 } from '@heroicons/react/24/outline';
 
-const NAV_ITEMS = [
+export const NAV_ITEMS = [
     {
         name: 'Dashboard',
         href: '#',
