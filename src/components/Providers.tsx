@@ -27,9 +27,7 @@ export function Providers({ children }: ProvidersProps) {
                 // Check if user is already logged in
                 const { data: { session } } = await supabase.auth.getSession();
                 if (session) {
-                    console.log('[Providers] Session found, initiating PowerSync connection...');
                     await connectPowerSync();
-                    console.log('[Providers] Initial connection request completed');
                 }
             } catch (error: any) {
                 // Ignore AbortError which can happen during hot reloads or strict mode
@@ -45,7 +43,6 @@ export function Providers({ children }: ProvidersProps) {
 
         // Listen for auth state changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log('[Auth] State changed:', event);
 
             if (event === 'SIGNED_IN' && session) {
                 // Do not await this, preventing potential deadlocks if Supabase awaits listeners

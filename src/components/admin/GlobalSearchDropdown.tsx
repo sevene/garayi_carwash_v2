@@ -1,108 +1,20 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { useQuery } from '@powersync/react';
 import Link from 'next/link';
-import { CubeIcon, SparklesIcon, UserGroupIcon, UsersIcon, TicketIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
+import { CubeIcon, SparklesIcon, UserGroupIcon, UsersIcon, TicketIcon, ArrowTopRightOnSquareIcon, TagIcon, ClipboardDocumentListIcon } from '@heroicons/react/24/outline';
 import { useSettings } from '@/hooks/useSettings';
 import { NAV_ITEMS } from './AdminSideBar';
+import { PAGE_KEYWORDS } from '@/generated/pageKeywords.generated';
 
-// Keywords map: searchable terms for each page's fields & elements
-// Each keyword has a section (tab name) and a properly capitalized label
+// ─── Search keywords are auto-generated ───
+// Run: node scripts/generate-search-keywords.mjs
+// The scraper visits each admin page and extracts visible text
+// (headings, labels, table headers, buttons, tabs) into the
+// generated file at src/generated/pageKeywords.generated.ts
+
 type PageKeyword = { section: string; label: string };
-const PAGE_KEYWORDS: Record<string, PageKeyword[]> = {
-    '/admin/dashboard/overview': [
-        { section: 'Overview', label: 'Total Sales' },
-        { section: 'Overview', label: 'Tickets Today' },
-        { section: 'Overview', label: 'Revenue' },
-        { section: 'Overview', label: 'Commissions' },
-        { section: 'Overview', label: 'Crew Performance' },
-        { section: 'Overview', label: 'Recent Transactions' },
-    ],
-    '/admin/dashboard/sales': [
-        { section: 'Sales', label: 'Sales Breakdown' },
-        { section: 'Sales', label: 'Daily Sales' },
-        { section: 'Sales', label: 'Monthly Sales' },
-        { section: 'Sales', label: 'Revenue Chart' },
-    ],
-    '/admin/dashboard/expenses': [
-        { section: 'Expenses', label: 'Expense Tracking' },
-        { section: 'Expenses', label: 'Costs' },
-        { section: 'Expenses', label: 'Spending' },
-    ],
-    '/admin/dashboard/reports': [
-        { section: 'Reports', label: 'Analytics' },
-        { section: 'Reports', label: 'Export' },
-        { section: 'Reports', label: 'Summary' },
-    ],
-    '/admin/categories': [
-        { section: 'Categories', label: 'Category Name' },
-        { section: 'Categories', label: 'Subcategory' },
-        { section: 'Categories', label: 'Product Groups' },
-    ],
-    '/admin/products': [
-        { section: 'Products', label: 'Product Name' },
-        { section: 'Products', label: 'SKU' },
-        { section: 'Products', label: 'Price' },
-        { section: 'Products', label: 'Cost' },
-        { section: 'Products', label: 'Barcode' },
-        { section: 'Products', label: 'Stock' },
-        { section: 'Products', label: 'POS Visibility' },
-        { section: 'Products', label: 'Add Product' },
-    ],
-    '/admin/inventory': [
-        { section: 'Inventory', label: 'Stock Level' },
-        { section: 'Inventory', label: 'Quantity' },
-        { section: 'Inventory', label: 'Restock' },
-        { section: 'Inventory', label: 'Stock Count' },
-        { section: 'Inventory', label: 'Low Stock' },
-    ],
-    '/admin/services': [
-        { section: 'Services', label: 'Service Name' },
-        { section: 'Services', label: 'Base Price' },
-        { section: 'Services', label: 'Service Variant' },
-        { section: 'Services', label: 'Recipe' },
-        { section: 'Services', label: 'Description' },
-    ],
-    '/admin/orders': [
-        { section: 'Orders', label: 'Order History' },
-        { section: 'Orders', label: 'Ticket' },
-        { section: 'Orders', label: 'Status' },
-        { section: 'Orders', label: 'Paid' },
-        { section: 'Orders', label: 'Pending' },
-        { section: 'Orders', label: 'Walk-in' },
-        { section: 'Orders', label: 'Checkout' },
-    ],
-    '/admin/customers': [
-        { section: 'Customers', label: 'Customer Name' },
-        { section: 'Customers', label: 'Email' },
-        { section: 'Customers', label: 'Phone' },
-        { section: 'Customers', label: 'Loyalty' },
-        { section: 'Customers', label: 'Customer History' },
-        { section: 'Customers', label: 'CRM' },
-    ],
-    '/admin/people': [
-        { section: 'People', label: 'Employee Name' },
-        { section: 'People', label: 'Staff' },
-        { section: 'People', label: 'Role' },
-        { section: 'People', label: 'Shift' },
-        { section: 'People', label: 'Commission Rate' },
-        { section: 'People', label: 'Hire Date' },
-        { section: 'People', label: 'Position' },
-    ],
-    '/admin/settings': [
-        { section: 'General', label: 'Store Name' },
-        { section: 'General', label: 'Store Address' },
-        { section: 'General', label: 'Theme Preference' },
-        { section: 'Financial', label: 'Currency' },
-        { section: 'Financial', label: 'Tax Rate' },
-        { section: 'Receipt & Printing', label: 'Default Printer' },
-        { section: 'Receipt & Printing', label: 'Receipt Header' },
-        { section: 'Receipt & Printing', label: 'Receipt Footer' },
-        { section: 'Notifications', label: 'System Alerts' },
-        { section: 'Notifications', label: 'Enable Notifications' },
-    ],
-};
 
 // Flatten nav items (including children like Dashboard > Overview) into a searchable list
 const ADMIN_PAGES = NAV_ITEMS.flatMap(item => {
@@ -121,9 +33,46 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
     const { formatCurrency } = useSettings();
     const q = query.toLowerCase().trim();
 
+    // Helper: highlight matching portions of text based on the search query
+    const highlightText = useCallback((text: string | null | undefined): React.ReactNode => {
+        if (!text || !q) return text ?? '';
+        // Escape special regex characters in the query
+        const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`(${escaped})`, 'gi');
+        const parts = text.split(regex);
+        if (parts.length <= 1) return text;
+        return parts.map((part, i) =>
+            regex.test(part) ? (
+                <mark
+                    key={i}
+                    className="bg-amber-300/40 text-inherit rounded-sm group-hover/item:bg-amber-300/50 transition-colors"
+                >
+                    {part}
+                </mark>
+            ) : (
+                <span key={i}>{part}</span>
+            )
+        );
+    }, [q]);
+
     // Fetch all tables from local PowerSync db
     const { data: products = [], isLoading: loadingProducts } = useQuery<any>('SELECT * FROM products ORDER BY name LIMIT 100');
-    const { data: services = [], isLoading: loadingServices } = useQuery<any>('SELECT * FROM services ORDER BY name LIMIT 100');
+    const { data: rawInventory = [], isLoading: loadingInventory } = useQuery<any>('SELECT * FROM inventory');
+    const { data: services = [], isLoading: loadingServices } = useQuery<any>(
+        `SELECT s.id, s.name, s.description, s.price,
+                sv.id as variant_id, sv.name as variant_name, sv.price as variant_price
+         FROM services s
+         LEFT JOIN service_variants sv ON sv.service_id = s.id AND sv.active = 1
+         WHERE s.active = 1
+         ORDER BY s.name, sv.price`
+    );
+    const { data: categories = [], isLoading: loadingCategories } = useQuery<any>(
+        `SELECT c.id, c.name, c.parent_id, p.name as parent_name
+         FROM categories c
+         LEFT JOIN categories p ON c.parent_id = p.id
+         WHERE c.active = 1
+         ORDER BY c.name`
+    );
     const { data: customers = [], isLoading: loadingCustomers } = useQuery<any>('SELECT * FROM customers ORDER BY name LIMIT 100');
     const { data: employees = [], isLoading: loadingEmployees } = useQuery<any>('SELECT * FROM employees ORDER BY name LIMIT 100');
     const { data: tickets = [], isLoading: loadingTickets } = useQuery<any>('SELECT * FROM tickets ORDER BY created_at DESC LIMIT 100');
@@ -134,10 +83,58 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
         return products.filter((p: any) => p.name?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q));
     }, [q, products]);
 
+    const matchedInventory = useMemo(() => {
+        if (!q) return [];
+        return matchedProducts.map((p: any) => {
+            const inv = rawInventory.find((i: any) => i.product_id === p.id);
+            return {
+                id: p.id,
+                name: p.name,
+                sku: p.sku,
+                stock: inv ? inv.stock_quantity : 0,
+                threshold: inv ? inv.low_stock_threshold : 10
+            };
+        });
+    }, [q, matchedProducts, rawInventory]);
+
+    // Group service rows (joined with variants) into a structured list
     const matchedServices = useMemo(() => {
         if (!q) return [];
-        return services.filter((s: any) => s.name?.toLowerCase().includes(q));
+
+        // Group flat JOIN rows into { service, variants[] }
+        const serviceMap = new Map<string, { id: string; name: string; description: string; price: number; variants: { id: string; name: string; price: number }[] }>();
+        for (const row of services) {
+            if (!serviceMap.has(row.id)) {
+                serviceMap.set(row.id, {
+                    id: row.id,
+                    name: row.name,
+                    description: row.description,
+                    price: row.price || 0,
+                    variants: []
+                });
+            }
+            if (row.variant_id) {
+                serviceMap.get(row.id)!.variants.push({
+                    id: row.variant_id,
+                    name: row.variant_name,
+                    price: row.variant_price || 0
+                });
+            }
+        }
+
+        // Filter: match on service name, description, or any variant name
+        return [...serviceMap.values()].filter(s => {
+            const nameMatch = s.name?.toLowerCase().includes(q);
+            const descMatch = s.description?.toLowerCase().includes(q);
+            const variantMatch = s.variants.some(v => v.name?.toLowerCase().includes(q));
+            return nameMatch || descMatch || variantMatch;
+        });
     }, [q, services]);
+
+    const matchedCategories = useMemo(() => {
+        if (!q) return [];
+        return categories.filter((c: any) => c.name?.toLowerCase().includes(q));
+    }, [q, categories]);
 
     const matchedCustomers = useMemo(() => {
         if (!q) return [];
@@ -169,8 +166,8 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
             .filter(Boolean) as (typeof ADMIN_PAGES[number] & { matchedKeywords: PageKeyword[] })[];
     }, [q]);
 
-    const totalResults = matchedProducts.length + matchedServices.length + matchedCustomers.length + matchedEmployees.length + matchedTickets.length + matchedPages.length;
-    const isLoading = loadingProducts || loadingServices || loadingCustomers || loadingEmployees || loadingTickets;
+    const totalResults = matchedProducts.length + matchedInventory.length + matchedServices.length + matchedCategories.length + matchedCustomers.length + matchedEmployees.length + matchedTickets.length + matchedPages.length;
+    const isLoading = loadingProducts || loadingInventory || loadingServices || loadingCategories || loadingCustomers || loadingEmployees || loadingTickets;
 
     if (!q) return null;
 
@@ -204,7 +201,7 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
                                 {matchedPages.map((page, idx) => (
                                     <Link onClick={onClose} href={page.path} key={`page-${idx}`} className="flex items-center justify-between px-4 py-3 bg-white/30 hover:bg-gray-900 rounded-xl transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] group/item">
                                         <div className="min-w-0 flex-1">
-                                            <p className="font-bold text-gray-900 group-hover/item:text-white text-sm transition">{page.title}</p>
+                                            <p className="font-bold text-gray-900 group-hover/item:text-white text-sm transition">{highlightText(page.title)}</p>
                                             {page.matchedKeywords.length > 0 ? (
                                                 <p className="text-[10px] text-gray-500 group-hover/item:text-gray-300 mt-0.5 transition truncate">
                                                     {Object.entries(
@@ -213,7 +210,14 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
                                                             acc[kw.section].push(kw.label);
                                                             return acc;
                                                         }, {} as Record<string, string[]>)
-                                                    ).map(([section, labels]) => `${section}: ${labels.join(', ')}`).join(' · ')}
+                                                    ).map(([section, labels], sIdx) => (
+                                                        <span key={sIdx}>
+                                                            {sIdx > 0 && ' · '}
+                                                            {section}: {labels.map((lbl, lIdx) => (
+                                                                <span key={lIdx}>{lIdx > 0 && ', '}{highlightText(lbl)}</span>
+                                                            ))}
+                                                        </span>
+                                                    ))}
                                                 </p>
                                             ) : (
                                                 <p className="text-[10px] text-gray-500 group-hover/item:text-gray-300 font-mono mt-0.5 transition">{page.path}</p>
@@ -238,11 +242,66 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
                                 {matchedProducts.map((p: any) => (
                                     <Link onClick={onClose} href={`/admin/products/edit?id=${p.id}`} key={p.id} className="flex items-center justify-between px-4 py-3 bg-white/30 hover:bg-gray-900 rounded-xl transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] group/item">
                                         <div>
-                                            <p className="font-bold text-gray-900 group-hover/item:text-white text-sm transition">{p.name}</p>
-                                            <p className="text-[10px] text-gray-500 group-hover/item:text-gray-300 font-mono mt-0.5 transition">SKU: {p.sku || 'N/A'}</p>
+                                            <p className="font-bold text-gray-900 group-hover/item:text-white text-sm transition">{highlightText(p.name)}</p>
+                                            <p className="text-[10px] text-gray-500 group-hover/item:text-gray-300 font-mono mt-0.5 transition">SKU: {highlightText(p.sku) || 'N/A'}</p>
                                         </div>
                                         <div className="text-right">
                                             <p className="font-bold text-gray-900 group-hover/item:text-white text-sm transition">{formatCurrency(p.price)}</p>
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Inventory Block */}
+                    {matchedInventory.length > 0 && (
+                        <div>
+                            <div className="px-3 py-1.5 text-xs font-extrabold text-gray-500 uppercase tracking-widest flex items-center gap-2 mb-1">
+                                <ClipboardDocumentListIcon className="w-4 h-4 text-gray-400" /> Inventory
+                            </div>
+                            <div className="space-y-1">
+                                {matchedInventory.map((i: any) => {
+                                    const stock = i.stock ?? 0;
+                                    const threshold = i.threshold ?? 10;
+                                    const isLowStock = stock <= threshold;
+                                    return (
+                                        <Link onClick={onClose} href={`/admin/inventory?search=${encodeURIComponent(i.name)}`} key={i.id} className="flex items-center justify-between px-4 py-3 bg-white/30 hover:bg-gray-900 rounded-xl transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] group/item">
+                                            <div>
+                                                <p className="font-bold text-gray-900 group-hover/item:text-white text-sm transition">{highlightText(i.name)}</p>
+                                                <p className="text-[10px] text-gray-500 group-hover/item:text-gray-300 font-mono mt-0.5 transition">SKU: {highlightText(i.sku) || 'N/A'}</p>
+                                            </div>
+                                            <div className="text-right flex items-center gap-3">
+                                                {isLowStock && <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-[10px] font-bold tracking-wide uppercase group-hover/item:bg-red-500/20 group-hover/item:text-red-300 transition-colors">Low Stock</span>}
+                                                <div className="text-right">
+                                                    <p className="font-bold text-gray-900 group-hover/item:text-white text-sm transition">{stock}</p>
+                                                    <p className="text-[10px] text-gray-400 group-hover/item:text-gray-500 font-medium">in stock</p>
+                                                </div>
+                                            </div>
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Categories */}
+                    {matchedCategories.length > 0 && (
+                        <div>
+                            <div className="px-3 py-1.5 text-xs font-extrabold text-gray-500 uppercase tracking-widest flex items-center gap-2 mb-1">
+                                <TagIcon className="w-4 h-4 text-gray-400" /> Categories
+                            </div>
+                            <div className="space-y-1">
+                                {matchedCategories.map((c: any) => (
+                                    <Link onClick={onClose} href="/admin/categories" key={c.id} className="flex items-center justify-between px-4 py-3 bg-white/30 hover:bg-gray-900 rounded-xl transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] group/item">
+                                        <div className="min-w-0 flex-1">
+                                            <p className="font-bold text-gray-900 group-hover/item:text-white text-sm transition">{highlightText(c.name)}</p>
+                                            <p className="text-[10px] text-gray-500 group-hover/item:text-gray-300 mt-0.5 transition">
+                                                {c.parent_name ? `Subcategory of ${c.parent_name}` : 'Top-level category'}
+                                            </p>
+                                        </div>
+                                        <div className="text-right shrink-0 ml-3">
+                                            <TagIcon className="w-4 h-4 text-gray-400 group-hover/item:text-white transition" />
                                         </div>
                                     </Link>
                                 ))}
@@ -257,17 +316,42 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
                                 <SparklesIcon className="w-4 h-4 text-gray-400" /> Services
                             </div>
                             <div className="space-y-1">
-                                {matchedServices.map((s: any) => (
-                                    <Link onClick={onClose} href={`/admin/services/${s.id}`} key={s.id} className="flex items-center justify-between px-4 py-3 bg-white/30 hover:bg-gray-900 rounded-xl transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] group/item">
-                                        <div>
-                                            <p className="font-bold text-gray-900 group-hover/item:text-white text-sm transition">{s.name}</p>
-                                            <p className="text-[10px] text-gray-500 group-hover/item:text-gray-300 truncate max-w-[150px] transition">{s.description || 'No description'}</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="font-bold text-gray-900 group-hover/item:text-white text-sm transition">{formatCurrency(s.base_price || 0)}</p>
-                                        </div>
-                                    </Link>
-                                ))}
+                                {matchedServices.map((s: any) => {
+                                    // Calculate display price from variants
+                                    const variantPrices = s.variants.map((v: any) => v.price).filter((p: number) => p > 0);
+                                    const minPrice = variantPrices.length > 0 ? Math.min(...variantPrices) : s.price || 0;
+                                    const maxPrice = variantPrices.length > 0 ? Math.max(...variantPrices) : s.price || 0;
+                                    const priceDisplay = variantPrices.length > 1 && minPrice !== maxPrice
+                                        ? `${formatCurrency(minPrice)} – ${formatCurrency(maxPrice)}`
+                                        : formatCurrency(minPrice);
+
+                                    // Find which variants matched the query
+                                    const matchingVariants = s.variants.filter((v: any) => v.name?.toLowerCase().includes(q));
+
+                                    return (
+                                        <Link onClick={onClose} href={`/admin/services/${s.id}`} key={s.id} className="flex items-center justify-between px-4 py-3 bg-white/30 hover:bg-gray-900 rounded-xl transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] group/item">
+                                            <div className="min-w-0 flex-1">
+                                                <p className="font-bold text-gray-900 group-hover/item:text-white text-sm transition">{highlightText(s.name)}</p>
+                                                {matchingVariants.length > 0 ? (
+                                                    <p className="text-[10px] text-gray-500 group-hover/item:text-gray-300 truncate max-w-[250px] mt-0.5 transition">
+                                                        Variants: {matchingVariants.map((v: any, i: number) => (
+                                                            <span key={v.id}>{i > 0 && ', '}{highlightText(v.name)} ({formatCurrency(v.price)})</span>
+                                                        ))}
+                                                    </p>
+                                                ) : s.variants.length > 0 ? (
+                                                    <p className="text-[10px] text-gray-500 group-hover/item:text-gray-300 truncate max-w-[250px] mt-0.5 transition">
+                                                        {s.variants.length} variant{s.variants.length > 1 ? 's' : ''}: {s.variants.map((v: any) => v.name).join(', ')}
+                                                    </p>
+                                                ) : (
+                                                    <p className="text-[10px] text-gray-500 group-hover/item:text-gray-300 truncate max-w-[150px] mt-0.5 transition">{s.description || 'No description'}</p>
+                                                )}
+                                            </div>
+                                            <div className="text-right shrink-0 ml-3">
+                                                <p className="font-bold text-gray-900 group-hover/item:text-white text-sm transition">{priceDisplay}</p>
+                                            </div>
+                                        </Link>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
@@ -282,10 +366,10 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
                                 {matchedCustomers.map((c: any) => (
                                     <Link onClick={onClose} href={`/admin/customers`} key={c.id} className="flex items-center justify-between px-4 py-3 bg-white/30 hover:bg-gray-900 rounded-xl transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] group/item">
                                         <div>
-                                            <p className="font-bold text-gray-900 group-hover/item:text-white text-sm transition">{c.name}</p>
+                                            <p className="font-bold text-gray-900 group-hover/item:text-white text-sm transition">{highlightText(c.name)}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-[10px] text-gray-500 group-hover/item:text-gray-300 transition">{c.phone || c.email || 'No info'}</p>
+                                            <p className="text-[10px] text-gray-500 group-hover/item:text-gray-300 transition">{c.phone ? highlightText(c.phone) : c.email ? highlightText(c.email) : 'No info'}</p>
                                         </div>
                                     </Link>
                                 ))}
@@ -303,10 +387,10 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
                                 {matchedEmployees.map((e: any) => (
                                     <Link onClick={onClose} href={`/admin/people`} key={e.id} className="flex items-center justify-between px-4 py-3 bg-white/30 hover:bg-gray-900 rounded-xl transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] group/item">
                                         <div>
-                                            <p className="font-bold text-gray-900 group-hover/item:text-white text-sm transition">{e.name}</p>
+                                            <p className="font-bold text-gray-900 group-hover/item:text-white text-sm transition">{highlightText(e.name)}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-[10px] text-gray-900 group-hover/item:text-white uppercase font-bold transition">{e.role}</p>
+                                            <p className="text-[10px] text-gray-900 group-hover/item:text-white uppercase font-bold transition">{highlightText(e.role)}</p>
                                         </div>
                                     </Link>
                                 ))}
@@ -324,10 +408,10 @@ export default function GlobalSearchDropdown({ query, onClose }: { query: string
                                 {matchedTickets.map((t: any) => (
                                     <Link onClick={onClose} href={`/admin/orders`} key={t.id} className="flex items-center justify-between px-4 py-3 bg-white/30 hover:bg-gray-900 rounded-xl transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] group/item">
                                         <div>
-                                            <p className="font-bold text-gray-900 group-hover/item:text-white text-sm transition">{t.customer_name || 'Walk-in'}</p>
+                                            <p className="font-bold text-gray-900 group-hover/item:text-white text-sm transition">{t.customer_name ? highlightText(t.customer_name) : 'Walk-in'}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className={`text-[10px] uppercase font-bold transition ${t.status === 'PAID' ? 'text-gray-900 group-hover/item:text-white' : 'text-gray-500 group-hover/item:text-gray-300'}`}>{t.status}</p>
+                                            <p className={`text-[10px] uppercase font-bold transition ${t.status === 'PAID' ? 'text-gray-900 group-hover/item:text-white' : 'text-gray-500 group-hover/item:text-gray-300'}`}>{highlightText(t.status)}</p>
                                         </div>
                                     </Link>
                                 ))}

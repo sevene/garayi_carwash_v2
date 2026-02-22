@@ -48,7 +48,6 @@ export default function LoginPage() {
                 throw new Error(result.error);
             }
 
-            console.log('Login successful, redirecting...');
 
             // Redirect based on role
             if (result.role === 'admin') {

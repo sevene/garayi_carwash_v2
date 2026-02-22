@@ -62,15 +62,12 @@ export async function connectPowerSync(): Promise<void> {
 
     // Check if already connected
     if (db.connected) {
-        console.log('[PowerSync] Already connected');
         return;
     }
 
     connectionPromise = (async () => {
         try {
-            console.log('[PowerSync] Connecting...');
             await db.connect(connector);
-            console.log('[PowerSync] Connected successfully');
         } catch (error) {
             console.error('[PowerSync] Connection error:', error);
             throw error;
@@ -87,9 +84,7 @@ export async function disconnectPowerSync(): Promise<void> {
     const db = getPowerSync();
 
     if (db.connected) {
-        console.log('[PowerSync] Disconnecting...');
         await db.disconnect();
-        console.log('[PowerSync] Disconnected');
     }
 }
 
@@ -115,7 +110,6 @@ export function watchSyncStatus(callback: (status: { connected: boolean; lastSyn
     // Subscribe to status changes
     const unsubscribe = db.registerListener({
         statusChanged: (status: any) => {
-            console.log('[PowerSync] Status changed:', status);
             callback({
                 connected: status.connected,
                 lastSyncedAt: status.lastSyncedAt

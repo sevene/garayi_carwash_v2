@@ -37,6 +37,11 @@ export default function AdminCategoriesPage() {
     // Fetch categories from PowerSync
     const { data: categoriesData = [], isLoading } = useQuery<any>('SELECT * FROM categories ORDER BY name');
 
+    // Fetch product counts per category
+    const { data: productCounts = [] } = useQuery<any>(
+        'SELECT category_id, COUNT(*) as count FROM products WHERE active = 1 GROUP BY category_id'
+    );
+
     // Map categories
     const categories = useMemo(() => {
         return categoriesData.map((c: any) => ({
@@ -47,6 +52,15 @@ export default function AdminCategoriesPage() {
             active: c.active === 1 || c.active === true
         }));
     }, [categoriesData]);
+
+    // Build a product count lookup: categoryId -> count
+    const productCountMap = useMemo(() => {
+        const map: Record<string, number> = {};
+        productCounts.forEach((row: any) => {
+            if (row.category_id) map[row.category_id] = row.count;
+        });
+        return map;
+    }, [productCounts]);
 
     const categoryTree = useMemo(() => buildCategoryTree(categories), [categories]);
 
@@ -159,68 +173,93 @@ export default function AdminCategoriesPage() {
                                     ) : categories.length === 0 ? (
                                         <tr><td colSpan={4} className="px-8 py-12 text-center text-gray-500">No categories found.</td></tr>
                                     ) : (
-                                        categoryTree.map((node) => (
-                                            <React.Fragment key={node._id}>
-                                                <tr className="hover:bg-gray-50/80 transition-colors group">
-                                                    <td className="px-8 py-4 font-bold text-gray-900">
-                                                        {node.name}
-                                                    </td>
-                                                    <td className="px-6 py-4 text-center text-gray-500">
-                                                        {node.children?.length || 0}
-                                                    </td>
-                                                    <td className="px-6 py-4 text-center text-gray-500">
-                                                        -
-                                                    </td>
-                                                    <td className="px-6 py-4 text-center">
-                                                        <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <button
-                                                                onClick={() => handleEdit(node)}
-                                                                className="p-2 text-gray-400 hover:text-lime-600 hover:bg-lime-50 rounded-lg transition-colors"
-                                                            >
-                                                                <PencilIcon className="w-5 h-5" />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDelete(node._id)}
-                                                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                            >
-                                                                <TrashIcon className="w-5 h-5" />
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                                {/* Subcategories */}
-                                                {node.children?.map(sub => (
-                                                    <tr key={sub._id} className="hover:bg-gray-50/80 transition-colors group/sub">
-                                                        <td className="px-8 py-3 pl-16 flex items-center gap-2 text-gray-600">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-gray-300"></div>
-                                                            {sub.name}
+                                        categoryTree.map((node) => {
+                                            const parentProductCount = productCountMap[node._id] || 0;
+                                            const childrenProductCount = (node.children || []).reduce((sum, sub) => sum + (productCountMap[sub._id] || 0), 0);
+                                            const totalProducts = parentProductCount + childrenProductCount;
+
+                                            return (
+                                                <React.Fragment key={node._id}>
+                                                    <tr className="hover:bg-gray-50/80 transition-colors group">
+                                                        <td className="px-8 py-4 font-bold text-gray-900">
+                                                            {node.name}
                                                         </td>
-                                                        <td className="px-6 py-3 text-center text-xs text-gray-400">
-                                                            -
+                                                        <td className="px-6 py-4 text-center">
+                                                            {(node.children?.length || 0) > 0 ? (
+                                                                <div>
+                                                                    <span className="text-gray-900 font-semibold">{node.children?.length}</span>
+                                                                    <p className="text-[10px] text-gray-400 mt-0.5 truncate max-w-[150px] mx-auto">
+                                                                        {node.children?.map(c => c.name).join(', ')}
+                                                                    </p>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-gray-400">—</span>
+                                                            )}
                                                         </td>
-                                                        <td className="px-6 py-3 text-center text-xs text-gray-400">
-                                                            -
+                                                        <td className="px-6 py-4 text-center text-gray-500">
+                                                            {totalProducts > 0 ? (
+                                                                <span className="font-semibold text-gray-900">{totalProducts}</span>
+                                                            ) : (
+                                                                <span className="text-gray-400">—</span>
+                                                            )}
                                                         </td>
-                                                        <td className="px-6 py-3 text-center">
-                                                            <div className="flex items-center justify-center gap-2 opacity-0 group-hover/sub:opacity-100 transition-opacity">
+                                                        <td className="px-6 py-4 text-center">
+                                                            <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                                 <button
-                                                                    onClick={() => handleEdit(sub)}
-                                                                    className="p-1.5 text-gray-400 hover:text-lime-600 hover:bg-lime-50 rounded-lg transition-colors"
+                                                                    onClick={() => handleEdit(node)}
+                                                                    className="p-2 text-gray-400 hover:text-lime-600 hover:bg-lime-50 rounded-lg transition-colors"
                                                                 >
-                                                                    <PencilIcon className="w-4 h-4" />
+                                                                    <PencilIcon className="w-5 h-5" />
                                                                 </button>
                                                                 <button
-                                                                    onClick={() => handleDelete(sub._id)}
-                                                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                                    onClick={() => handleDelete(node._id)}
+                                                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                                 >
-                                                                    <TrashIcon className="w-4 h-4" />
+                                                                    <TrashIcon className="w-5 h-5" />
                                                                 </button>
                                                             </div>
                                                         </td>
                                                     </tr>
-                                                ))}
-                                            </React.Fragment>
-                                        ))
+                                                    {/* Subcategories */}
+                                                    {node.children?.map(sub => (
+                                                        <tr key={sub._id} className="hover:bg-gray-50/80 transition-colors group/sub bg-gray-50/30">
+                                                            <td className="px-8 py-3 pl-14">
+                                                                <div className="flex items-center gap-2.5 text-gray-600">
+                                                                    <div className="w-4 border-t border-l border-gray-300 h-3 rounded-bl -mt-3 shrink-0"></div>
+                                                                    <span className="font-medium">{sub.name}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-6 py-3 text-center text-xs text-gray-400">
+                                                                —
+                                                            </td>
+                                                            <td className="px-6 py-3 text-center">
+                                                                {(productCountMap[sub._id] || 0) > 0 ? (
+                                                                    <span className="text-sm font-medium text-gray-700">{productCountMap[sub._id]}</span>
+                                                                ) : (
+                                                                    <span className="text-xs text-gray-400">—</span>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-6 py-3 text-center">
+                                                                <div className="flex items-center justify-center gap-2 opacity-0 group-hover/sub:opacity-100 transition-opacity">
+                                                                    <button
+                                                                        onClick={() => handleEdit(sub)}
+                                                                        className="p-1.5 text-gray-400 hover:text-lime-600 hover:bg-lime-50 rounded-lg transition-colors"
+                                                                    >
+                                                                        <PencilIcon className="w-4 h-4" />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleDelete(sub._id)}
+                                                                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                                    >
+                                                                        <TrashIcon className="w-4 h-4" />
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </React.Fragment>
+                                            );
+                                        })
                                     )}
                                 </tbody>
                             </table>

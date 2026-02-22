@@ -23,7 +23,6 @@ export const useCartSanitization = (db: any) => {
                             await tx.execute('UPDATE ticket_items SET product_id = NULL WHERE id = ?', [id]);
                         }
                     });
-                    console.log(`[Cart] Sanitized ${badIds.length} items to unblock sync.`);
                 }
             } catch (err) {
                 console.warn("[Cart] Maintenance failed:", err);

@@ -8,9 +8,11 @@
   ],
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/generate-search-keywords.mjs",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "generate-keywords": "node scripts/generate-search-keywords.mjs"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",

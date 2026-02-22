@@ -15,14 +15,13 @@ export default async function middleware(req: NextRequest) {
     const cookie = req.cookies.get('session')?.value;
 
     if (path.startsWith('/pos') || path.startsWith('/admin')) {
-        console.log(`[Middleware] Checking route: ${path}`);
-        console.log(`[Middleware] Cookie present: ${!!cookie}`);
+        // Protected route check
     }
 
     const session = cookie ? await verifySession(cookie) : null;
 
     if (cookie && !session && (path.startsWith('/pos') || path.startsWith('/admin'))) {
-        console.log('[Middleware] Session verification failed (invalid signature or expired)');
+        // Session verification failed
     }
 
     // 4. Redirect

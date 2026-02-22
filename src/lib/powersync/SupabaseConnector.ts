@@ -21,7 +21,6 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
         }
 
         if (!session) {
-            console.log('[PowerSync] No session found, returning null credentials');
             throw new Error('No active session');
         }
 
@@ -49,7 +48,6 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
 
             // Mark transaction as complete
             await transaction.complete();
-            console.log('[PowerSync] Transaction uploaded successfully');
         } catch (error) {
             console.error('[PowerSync] Upload error:', error);
             // Don't complete the transaction - it will be retried
@@ -74,7 +72,7 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
             }
         }
 
-        console.log(`[PowerSync] Uploading ${op} to ${table}:`, id);
+
 
         switch (op) {
             case UpdateType.PUT:
@@ -111,7 +109,6 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
                                 console.error(`[PowerSync] Retry update error for ${table}:`, retryError);
                                 throw retryError;
                             }
-                            console.log('[PowerSync] Resolved conflict by updating existing inventory record');
                             return; // Success
                         }
                     }
@@ -136,7 +133,6 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
                             console.error(`[PowerSync] Retry upsert still failed for ${table}:`, retryError);
                             throw retryError;
                         }
-                        console.log(`[PowerSync] Successfully fixed and uploaded ticket_item ${id} with product_id=null`);
                         return;
                     }
 
@@ -182,7 +178,6 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
                             console.error(`[PowerSync] Retry PATCH still failed for ${table}:`, retryError);
                             throw retryError;
                         }
-                        console.log(`[PowerSync] Successfully fixed and PATCHed ticket_item ${id} with product_id=null`);
                         return;
                     }
 
@@ -222,7 +217,6 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
                             throw deleteError; // Throw original error if fallback fails
                         }
 
-                        console.log(`[PowerSync] Successfully soft-deleted record in ${table} (active=0).`);
                         return; // Consider operation successful
                     }
 
